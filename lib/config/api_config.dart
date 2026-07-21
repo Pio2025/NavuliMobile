@@ -1,0 +1,26 @@
+class ApiConfig {
+  static const String baseUrl = 'https://navulifiji.com';
+
+  static const String loginUrl = '$baseUrl/api/auth/login';
+  static const String meUrl = '$baseUrl/api/auth/me';
+  static const String noticesUrl = '$baseUrl/api/notices';
+  static const String announcementsUrl = '$baseUrl/api/announcements';
+  static const String dashboardUrl = '$baseUrl/api/dashboard';
+
+  static const String wallFeedUrl = '$baseUrl/api/wall/feed';
+  static const String wallPostUrl = '$baseUrl/api/wall/post';
+  static String wallCommentsUrl(int postId) => '$baseUrl/api/wall/post/$postId/comments';
+  static String wallCommentUrl(int postId) => '$baseUrl/api/wall/post/$postId/comment';
+  static const String wallReactUrl = '$baseUrl/api/wall/react';
+
+  static const String notificationsUrl = '$baseUrl/api/notifications';
+  static const String notificationsMarkReadUrl = '$baseUrl/api/notifications/mark-read';
+
+  static String photoUrl(String photo) {
+    if (photo.isEmpty) return '';
+    if (photo.startsWith('http://') || photo.startsWith('https://')) {
+      return photo;
+    }
+    return '$baseUrl/uploads/profilePhoto/$photo';
+  }
+}

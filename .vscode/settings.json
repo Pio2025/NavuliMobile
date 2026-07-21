@@ -1,0 +1,8 @@
+{
+  "java.import.exclusions": [
+    "**/android/**",
+    "**/build/**",
+    "**/.dart_tool/**"
+  ],
+  "java.import.gradle.enabled": false
+}
