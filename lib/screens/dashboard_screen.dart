@@ -170,6 +170,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   IconData _iconFor(String key) {
+    switch (key) {
+      case 'class_size':
+        return Icons.groups_outlined;
+      case 'conduct_positive':
+        return Icons.thumb_up_alt_outlined;
+      case 'conduct_negative':
+        return Icons.thumb_down_alt_outlined;
+      case 'conduct_resolved':
+        return Icons.task_alt_outlined;
+      case 'total_incidents':
+        return Icons.report_outlined;
+      case 'class_rank':
+        return Icons.emoji_events_outlined;
+      case 'overall_pct':
+        return Icons.grade_outlined;
+    }
     if (key.contains('school')) return Icons.school_outlined;
     if (key.contains('student')) return Icons.groups_outlined;
     if (key.contains('teacher')) return Icons.person_outline;

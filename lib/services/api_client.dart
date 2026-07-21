@@ -24,6 +24,8 @@ typedef SchoolScopedList = ({
   List<Map<String, dynamic>> items,
   List<Map<String, dynamic>> schools,
   int activeSchoolId,
+  bool hasMore,
+  Map<String, dynamic> permissions,
 });
 
 class ApiClient {
@@ -31,9 +33,12 @@ class ApiClient {
 
   ApiClient(this.auth);
 
-  Future<SchoolScopedList> getNotices({int? schoolId}) async {
+  Future<SchoolScopedList> getNotices({int? schoolId, int offset = 0}) async {
     final uri = Uri.parse(ApiConfig.noticesUrl).replace(
-      queryParameters: schoolId != null ? {'sch_id': '$schoolId'} : null,
+      queryParameters: {
+        'offset': '$offset',
+        if (schoolId != null) 'sch_id': '$schoolId',
+      },
     );
     final res = await http
         .get(uri, headers: auth.authHeaders)
@@ -46,12 +51,17 @@ class ApiClient {
       items: List<Map<String, dynamic>>.from(body['notices'] ?? []),
       schools: List<Map<String, dynamic>>.from(body['schools'] ?? []),
       activeSchoolId: (body['activeSchoolId'] as num? ?? 0).toInt(),
+      hasMore: body['hasMore'] == true,
+      permissions: Map<String, dynamic>.from(body['permissions'] ?? {}),
     );
   }
 
-  Future<SchoolScopedList> getAnnouncements({int? schoolId}) async {
+  Future<SchoolScopedList> getAnnouncements({int? schoolId, int offset = 0}) async {
     final uri = Uri.parse(ApiConfig.announcementsUrl).replace(
-      queryParameters: schoolId != null ? {'sch_id': '$schoolId'} : null,
+      queryParameters: {
+        'offset': '$offset',
+        if (schoolId != null) 'sch_id': '$schoolId',
+      },
     );
     final res = await http
         .get(uri, headers: auth.authHeaders)
@@ -64,7 +74,146 @@ class ApiClient {
       items: List<Map<String, dynamic>>.from(body['announcements'] ?? []),
       schools: List<Map<String, dynamic>>.from(body['schools'] ?? []),
       activeSchoolId: (body['activeSchoolId'] as num? ?? 0).toInt(),
+      hasMore: body['hasMore'] == true,
+      permissions: Map<String, dynamic>.from(body['permissions'] ?? {}),
     );
+  }
+
+  Future<Map<String, dynamic>> createNotice({
+    required String title,
+    required String content,
+    String priority = 'Normal',
+    String audience = 'All',
+    bool isPinned = false,
+    int? schoolId,
+  }) async {
+    final res = await http
+        .post(
+          Uri.parse(ApiConfig.noticesUrl),
+          headers: {...auth.authHeaders, 'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'title': title,
+            'content': content,
+            'priority': priority,
+            'audience': audience,
+            'is_pinned': isPinned,
+            if (schoolId != null) 'sch_id': schoolId,
+          }),
+        )
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to post notice.');
+    }
+    return Map<String, dynamic>.from(body['notice']);
+  }
+
+  Future<Map<String, dynamic>> updateNotice(
+    int id, {
+    required String title,
+    required String content,
+    String priority = 'Normal',
+    String audience = 'All',
+    bool isPinned = false,
+  }) async {
+    final res = await http
+        .put(
+          Uri.parse(ApiConfig.noticeUrl(id)),
+          headers: {...auth.authHeaders, 'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'title': title,
+            'content': content,
+            'priority': priority,
+            'audience': audience,
+            'is_pinned': isPinned,
+          }),
+        )
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to update notice.');
+    }
+    return Map<String, dynamic>.from(body['notice']);
+  }
+
+  Future<void> deleteNotice(int id) async {
+    final res = await http
+        .delete(Uri.parse(ApiConfig.noticeUrl(id)), headers: auth.authHeaders)
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to delete notice.');
+    }
+  }
+
+  Future<Map<String, dynamic>> toggleNoticePin(int id) async {
+    final res = await http
+        .post(Uri.parse(ApiConfig.noticePinUrl(id)), headers: auth.authHeaders)
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to update pin.');
+    }
+    return Map<String, dynamic>.from(body['notice']);
+  }
+
+  Future<Map<String, dynamic>> createAnnouncement({
+    required String title,
+    required String content,
+    String priority = 'Info',
+    int? schoolId,
+  }) async {
+    final res = await http
+        .post(
+          Uri.parse(ApiConfig.announcementsUrl),
+          headers: {...auth.authHeaders, 'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'title': title,
+            'content': content,
+            'priority': priority,
+            if (schoolId != null) 'sch_id': schoolId,
+          }),
+        )
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to post announcement.');
+    }
+    return Map<String, dynamic>.from(body['announcement']);
+  }
+
+  Future<Map<String, dynamic>> updateAnnouncement(
+    int id, {
+    required String title,
+    required String content,
+    String priority = 'Info',
+  }) async {
+    final res = await http
+        .put(
+          Uri.parse(ApiConfig.announcementUrl(id)),
+          headers: {...auth.authHeaders, 'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'title': title,
+            'content': content,
+            'priority': priority,
+          }),
+        )
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to update announcement.');
+    }
+    return Map<String, dynamic>.from(body['announcement']);
+  }
+
+  Future<void> deleteAnnouncement(int id) async {
+    final res = await http
+        .delete(Uri.parse(ApiConfig.announcementUrl(id)), headers: auth.authHeaders)
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to delete announcement.');
+    }
   }
 
   Future<Map<String, dynamic>> getDashboard() async {

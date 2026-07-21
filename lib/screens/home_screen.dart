@@ -4,9 +4,13 @@ import 'package:provider/provider.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/announcement_card.dart';
+import '../widgets/notice_card.dart';
 import '../widgets/stat_card.dart';
+import 'announcement_detail_screen.dart';
 import 'announcements_screen.dart';
 import 'dashboard_screen.dart';
+import 'notice_detail_screen.dart';
 import 'notices_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -214,18 +218,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 12),
                 _sectionHeader(context, 'Notices', onSeeAll: _openNotices),
                 const SizedBox(height: 8),
-                ..._buildPreviewCards(
-                  data.notices,
-                  emptyText: 'No notices right now.',
-                ),
+                _buildNoticePreview(data.notices),
                 const SizedBox(height: 20),
                 _sectionHeader(context, 'Announcements',
                     onSeeAll: _openAnnouncements),
                 const SizedBox(height: 8),
-                ..._buildPreviewCards(
-                  data.announcements,
-                  emptyText: 'No announcements right now.',
-                ),
+                _buildAnnouncementPreview(data.announcements),
               ],
             );
           },
@@ -349,6 +347,22 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   IconData _iconFor(String key) {
+    switch (key) {
+      case 'class_size':
+        return Icons.groups_outlined;
+      case 'conduct_positive':
+        return Icons.thumb_up_alt_outlined;
+      case 'conduct_negative':
+        return Icons.thumb_down_alt_outlined;
+      case 'conduct_resolved':
+        return Icons.task_alt_outlined;
+      case 'total_incidents':
+        return Icons.report_outlined;
+      case 'class_rank':
+        return Icons.emoji_events_outlined;
+      case 'overall_pct':
+        return Icons.grade_outlined;
+    }
     if (key.contains('school')) return Icons.school_outlined;
     if (key.contains('student')) return Icons.groups_outlined;
     if (key.contains('teacher')) return Icons.person_outline;
@@ -388,59 +402,54 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  List<Widget> _buildPreviewCards(
-    List<Map<String, dynamic>> items, {
-    required String emptyText,
-  }) {
-    if (items.isEmpty) {
-      return [
-        Builder(
-          builder: (context) => Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Text(
-              emptyText,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+  Widget _buildNoticePreview(List<Map<String, dynamic>> notices) {
+    if (notices.isEmpty) {
+      return Builder(
+        builder: (context) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Text(
+            'No notices right now.',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ),
-      ];
+      );
     }
-    return items.take(3).map((item) {
+    final notice = notices.first;
+    return NoticeCard(
+      notice: notice,
+      compact: true,
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => NoticeDetailScreen(notice: notice)),
+      ),
+    );
+  }
+
+  Widget _buildAnnouncementPreview(List<Map<String, dynamic>> announcements) {
+    if (announcements.isEmpty) {
       return Builder(
-        builder: (context) => Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardTheme.color ??
-                Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '${item['title'] ?? ''}',
-                style: const TextStyle(fontWeight: FontWeight.w600),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '${item['content'] ?? ''}',
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
+        builder: (context) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Text(
+            'No announcements right now.',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ),
       );
-    }).toList();
+    }
+    final announcement = announcements.first;
+    return AnnouncementCard(
+      announcement: announcement,
+      compact: true,
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => AnnouncementDetailScreen(announcement: announcement),
+        ),
+      ),
+    );
   }
 }
 

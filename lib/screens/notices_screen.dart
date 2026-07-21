@@ -3,9 +3,10 @@ import 'package:provider/provider.dart';
 
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
-import '../theme/app_theme.dart';
-import '../utils/time_ago.dart';
+import '../widgets/notice_card.dart';
 import '../widgets/school_tab_bar.dart';
+import 'notice_detail_screen.dart';
+import 'notice_form_screen.dart';
 
 class NoticesScreen extends StatefulWidget {
   const NoticesScreen({super.key});
@@ -16,32 +17,151 @@ class NoticesScreen extends StatefulWidget {
 
 class _NoticesScreenState extends State<NoticesScreen> {
   late ApiClient _client;
-  late Future<SchoolScopedList> _future;
+  final List<Map<String, dynamic>> _notices = [];
+
+  bool _loading = true;
+  bool _loadingMore = false;
+  bool _hasMore = false;
+  String? _error;
   int? _schoolId;
+  List<Map<String, dynamic>> _schools = [];
+  Map<String, dynamic> _permissions = {};
 
   @override
   void initState() {
     super.initState();
     _client = ApiClient(context.read<AuthService>());
-    _future = _load();
+    _loadFirstPage();
   }
 
-  Future<SchoolScopedList> _load() async {
-    final result = await _client.getNotices(schoolId: _schoolId);
-    _schoolId = result.activeSchoolId;
-    return result;
+  Future<void> _loadFirstPage() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final result = await _client.getNotices(schoolId: _schoolId, offset: 0);
+      setState(() {
+        _notices
+          ..clear()
+          ..addAll(result.items);
+        _hasMore = result.hasMore;
+        _schools = result.schools;
+        _schoolId = result.activeSchoolId;
+        _permissions = result.permissions;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = '$e';
+        _loading = false;
+      });
+    }
   }
 
-  Future<void> _refresh() async {
-    setState(() => _future = _load());
-    await _future;
+  Future<void> _loadMore() async {
+    if (_loadingMore || !_hasMore) return;
+    setState(() => _loadingMore = true);
+    try {
+      final result = await _client.getNotices(
+        schoolId: _schoolId,
+        offset: _notices.length,
+      );
+      setState(() {
+        _notices.addAll(result.items);
+        _hasMore = result.hasMore;
+        _loadingMore = false;
+      });
+    } catch (_) {
+      setState(() => _loadingMore = false);
+    }
   }
 
   void _switchSchool(int schId) {
-    setState(() {
-      _schoolId = schId;
-      _future = _load();
-    });
+    setState(() => _schoolId = schId);
+    _loadFirstPage();
+  }
+
+  bool get _canPost => _permissions['canPost'] == true;
+  bool get _canPin => _permissions['canPin'] == true;
+
+  Future<void> _openForm({Map<String, dynamic>? notice}) async {
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => NoticeFormScreen(
+          notice: notice,
+          canPin: _canPin,
+          schoolId: _schoolId,
+        ),
+      ),
+    );
+    if (saved == true) _loadFirstPage();
+  }
+
+  Future<void> _togglePin(Map<String, dynamic> notice) async {
+    try {
+      final updated = await _client.toggleNoticePin((notice['id'] as num).toInt());
+      final index = _notices.indexWhere((n) => n['id'] == notice['id']);
+      if (index != -1) setState(() => _notices[index] = updated);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+    }
+  }
+
+  Future<void> _delete(Map<String, dynamic> notice) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Delete notice?'),
+        content: const Text('This notice will be removed from the board.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete', style: TextStyle(color: Color(0xFFF1416C))),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await _client.deleteNotice((notice['id'] as num).toInt());
+      setState(() => _notices.removeWhere((n) => n['id'] == notice['id']));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+    }
+  }
+
+  void _openDetail(Map<String, dynamic> notice) {
+    final canEdit = notice['canEdit'] == true;
+    final canPin = notice['canPin'] == true;
+    final canDelete = notice['canDelete'] == true;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => NoticeDetailScreen(
+          notice: notice,
+          canEdit: canEdit,
+          canPin: canPin,
+          canDelete: canDelete,
+          onEdit: () {
+            Navigator.of(context).pop();
+            _openForm(notice: notice);
+          },
+          onTogglePin: () {
+            Navigator.of(context).pop();
+            _togglePin(notice);
+          },
+          onDelete: () {
+            Navigator.of(context).pop();
+            _delete(notice);
+          },
+        ),
+      ),
+    );
   }
 
   @override
@@ -49,221 +169,71 @@ class _NoticesScreenState extends State<NoticesScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Notice Board'),
+        actions: [
+          if (_canPost)
+            IconButton(
+              icon: const Icon(Icons.add_circle_outline),
+              tooltip: 'New notice',
+              onPressed: () => _openForm(),
+            ),
+        ],
       ),
       body: SafeArea(
         top: false,
         child: RefreshIndicator(
-          onRefresh: _refresh,
-          child: FutureBuilder<SchoolScopedList>(
-            future: _future,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting &&
-                  !snapshot.hasData) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (snapshot.hasError) {
-                return ListView(
-                  children: [
-                    const SizedBox(height: 120),
-                    Center(child: Text('Failed to load notices: ${snapshot.error}')),
-                  ],
-                );
-              }
-              final result = snapshot.data!;
-              final notices = result.items;
-
-              return ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  SchoolTabBar(
-                    schools: result.schools,
-                    activeSchoolId: result.activeSchoolId,
-                    onSelected: _switchSchool,
-                  ),
-                  if (notices.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.only(top: 100),
-                      child: Center(child: Text('No notices right now.')),
+          onRefresh: _loadFirstPage,
+          child: _loading
+              ? const Center(child: CircularProgressIndicator())
+              : _error != null
+                  ? ListView(
+                      children: [
+                        const SizedBox(height: 120),
+                        Center(child: Text('Failed to load notices: $_error')),
+                      ],
                     )
-                  else
-                    for (final n in notices) ...[
-                      _NoticeCard(notice: n),
-                      const SizedBox(height: 12),
-                    ],
-                ],
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PriorityStyle {
-  final Color color;
-  final Color bg;
-  const _PriorityStyle(this.color, this.bg);
-}
-
-const _noticePriorityStyles = {
-  'Urgent': _PriorityStyle(Color(0xFFF1416C), Color(0xFFFFF5F8)),
-  'Important': _PriorityStyle(Color(0xFFFFC700), Color(0xFFFFF8DD)),
-  'Normal': _PriorityStyle(Color(0xFF009EF7), Color(0xFFF1FAFF)),
-};
-
-class _NoticeCard extends StatelessWidget {
-  final Map<String, dynamic> notice;
-
-  const _NoticeCard({required this.notice});
-
-  @override
-  Widget build(BuildContext context) {
-    final pinned = notice['isPinned'] == true || notice['isPinned'] == 1;
-    final scheme = Theme.of(context).colorScheme;
-    final priority = '${notice['priority'] ?? 'Normal'}';
-    final style = _noticePriorityStyles[priority] ??
-        _noticePriorityStyles['Normal']!;
-    final postedBy = '${notice['postedBy'] ?? ''}'.trim();
-    final initial = postedBy.isNotEmpty ? postedBy[0].toUpperCase() : '?';
-
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardTheme.color ?? scheme.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: pinned
-            ? Border.all(color: style.color.withValues(alpha: 0.35))
-            : null,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Container(width: 4, color: style.color),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            '${notice['title'] ?? ''}',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 15,
-                              color: scheme.onSurface,
-                            ),
+                  : NotificationListener<ScrollNotification>(
+                      onNotification: (n) {
+                        if (n.metrics.pixels >= n.metrics.maxScrollExtent - 200) {
+                          _loadMore();
+                        }
+                        return false;
+                      },
+                      child: ListView(
+                        padding: const EdgeInsets.all(16),
+                        children: [
+                          SchoolTabBar(
+                            schools: _schools,
+                            activeSchoolId: _schoolId ?? 0,
+                            onSelected: _switchSchool,
                           ),
-                        ),
-                        if (pinned)
-                          Container(
-                            margin: const EdgeInsets.only(left: 6),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary,
-                              borderRadius: BorderRadius.circular(6),
+                          if (_notices.isEmpty)
+                            const Padding(
+                              padding: EdgeInsets.only(top: 100),
+                              child: Center(child: Text('No notices right now.')),
+                            )
+                          else
+                            for (final n in _notices) ...[
+                              NoticeCard(
+                                notice: n,
+                                onTap: () => _openDetail(n),
+                                canEdit: n['canEdit'] == true,
+                                canPin: n['canPin'] == true,
+                                canDelete: n['canDelete'] == true,
+                                onEdit: () => _openForm(notice: n),
+                                onTogglePin: () => _togglePin(n),
+                                onDelete: () => _delete(n),
+                                compact: true,
+                              ),
+                              const SizedBox(height: 12),
+                            ],
+                          if (_loadingMore)
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 16),
+                              child: Center(child: CircularProgressIndicator()),
                             ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.push_pin,
-                                    size: 10, color: Colors.white),
-                                SizedBox(width: 3),
-                                Text('PINNED',
-                                    style: TextStyle(
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.w800,
-                                      color: Colors.white,
-                                      letterSpacing: 0.4,
-                                    )),
-                              ],
-                            ),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: style.bg,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        priority,
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: style.color,
-                        ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 10),
-                    Text(
-                      '${notice['content'] ?? ''}',
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 13,
-                        height: 1.35,
-                        color: scheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 13,
-                          backgroundColor: style.color.withValues(alpha: 0.15),
-                          child: Text(
-                            initial,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: style.color,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            postedBy.isEmpty ? 'Staff' : postedBy,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: scheme.onSurface,
-                            ),
-                          ),
-                        ),
-                        Text(
-                          timeAgo(notice['createdAt']),
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: scheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
         ),
       ),
     );

@@ -4,7 +4,10 @@ class ApiConfig {
   static const String loginUrl = '$baseUrl/api/auth/login';
   static const String meUrl = '$baseUrl/api/auth/me';
   static const String noticesUrl = '$baseUrl/api/notices';
+  static String noticeUrl(int id) => '$baseUrl/api/notices/$id';
+  static String noticePinUrl(int id) => '$baseUrl/api/notices/$id/pin';
   static const String announcementsUrl = '$baseUrl/api/announcements';
+  static String announcementUrl(int id) => '$baseUrl/api/announcements/$id';
   static const String dashboardUrl = '$baseUrl/api/dashboard';
 
   static const String wallFeedUrl = '$baseUrl/api/wall/feed';
