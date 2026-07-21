@@ -40,10 +40,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Dashboard'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
       ),
-      body: RefreshIndicator(
+      body: SafeArea(
+        top: false,
+        child: RefreshIndicator(
         onRefresh: _refresh,
         child: FutureBuilder<Map<String, dynamic>>(
           future: _future,
@@ -103,6 +103,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             );
           },
         ),
+        ),
       ),
     );
   }
@@ -133,8 +134,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  /// Backend rows from raw SQL queries can come back as numeric strings
+  /// (MySQLi doesn't always cast); coerce defensively instead of `as num`.
+  num _asNum(dynamic value) {
+    if (value is num) return value;
+    return num.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
   bool _isDisplayableStat(String key, dynamic value) {
-    if (value is! num) return false;
+    if (value is! num && num.tryParse(value?.toString() ?? '') == null) {
+      return false;
+    }
     if (key == 'user_id' ||
         key.endsWith('_id') ||
         key.endsWith('_id_fk') ||
@@ -211,7 +221,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         children: entries
             .map((e) => StatCard(
                   label: _prettyLabel(e.key),
-                  value: _formatValue(e.key, e.value as num),
+                  value: _formatValue(e.key, _asNum(e.value)),
                   icon: _iconFor(e.key),
                 ))
             .toList(),
@@ -236,7 +246,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final bars = labels.entries
           .map((e) => (
                 label: e.value,
-                value: ((markBands[e.key] ?? 0) as num).toDouble(),
+                value: _asNum(markBands[e.key] ?? 0).toDouble(),
               ))
           .toList();
       if (bars.any((b) => b.value > 0)) {
@@ -249,7 +259,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final bars = teacherAttendance.cast<Map<String, dynamic>>().map((r) {
         return (
           label: '${r['class_name'] ?? ''}',
-          value: ((r['pct'] ?? 0) as num).toDouble(),
+          value: _asNum(r['pct'] ?? 0).toDouble(),
         );
       }).toList();
       charts.add(_BarChartCard(
@@ -263,8 +273,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final monthlyAttendance = stats['st_attendance_monthly'];
     if (monthlyAttendance is List && monthlyAttendance.isNotEmpty) {
       final bars = monthlyAttendance.cast<Map<String, dynamic>>().map((r) {
-        final present = ((r['present'] ?? 0) as num).toDouble();
-        final total = ((r['total'] ?? 0) as num).toDouble();
+        final present = _asNum(r['present'] ?? 0).toDouble();
+        final total = _asNum(r['total'] ?? 0).toDouble();
         final pct = total > 0 ? (present / total) * 100 : 0.0;
         return (label: '${r['label'] ?? ''}', value: pct);
       }).toList();
@@ -279,8 +289,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final subjectAttendance = stats['st_subject_attendance'];
     if (subjectAttendance is List && subjectAttendance.isNotEmpty) {
       final bars = subjectAttendance.cast<Map<String, dynamic>>().map((r) {
-        final present = ((r['present'] ?? 0) as num).toDouble();
-        final total = ((r['total'] ?? 0) as num).toDouble();
+        final present = _asNum(r['present'] ?? 0).toDouble();
+        final total = _asNum(r['total'] ?? 0).toDouble();
         final pct = total > 0 ? (present / total) * 100 : 0.0;
         return (label: '${r['subject_name'] ?? ''}', value: pct);
       }).toList();
@@ -297,7 +307,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final bars = usersByRole.cast<Map<String, dynamic>>().map((r) {
         return (
           label: '${r['role_cat_name'] ?? ''}',
-          value: ((r['cnt'] ?? 0) as num).toDouble(),
+          value: _asNum(r['cnt'] ?? 0).toDouble(),
         );
       }).toList();
       charts.add(_BarChartCard(title: 'Users by Role', bars: bars));
@@ -308,7 +318,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final bars = classroomsList.cast<Map<String, dynamic>>().map((r) {
         return (
           label: '${r['class_name'] ?? ''}',
-          value: ((r['student_count'] ?? 0) as num).toDouble(),
+          value: _asNum(r['student_count'] ?? 0).toDouble(),
         );
       }).toList();
       charts.add(_BarChartCard(title: 'Students by Classroom', bars: bars));
@@ -317,8 +327,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final assignmentSub = stats['ts_assignment_sub'];
     if (assignmentSub is List && assignmentSub.isNotEmpty) {
       final bars = assignmentSub.cast<Map<String, dynamic>>().map((r) {
-        final enrolled = ((r['enrolled'] ?? 0) as num).toDouble();
-        final submitted = ((r['submitted'] ?? 0) as num).toDouble();
+        final enrolled = _asNum(r['enrolled'] ?? 0).toDouble();
+        final submitted = _asNum(r['submitted'] ?? 0).toDouble();
         final pct = enrolled > 0 ? (submitted / enrolled) * 100 : 0.0;
         return (label: '${r['name'] ?? ''}', value: pct);
       }).toList();

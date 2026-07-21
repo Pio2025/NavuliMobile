@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../theme/app_theme.dart';
-
 class PlaceholderScreen extends StatelessWidget {
   final String title;
   final IconData icon;
@@ -18,24 +16,25 @@ class PlaceholderScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 72, color: scheme.onSurfaceVariant),
-            const SizedBox(height: 16),
-            Text(
-              '$title coming soon',
-              style: TextStyle(
-                fontSize: 16,
-                color: scheme.onSurfaceVariant,
-                fontWeight: FontWeight.w500,
+      body: SafeArea(
+        top: false,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 72, color: scheme.onSurfaceVariant),
+              const SizedBox(height: 16),
+              Text(
+                '$title coming soon',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: scheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

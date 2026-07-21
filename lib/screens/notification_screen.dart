@@ -61,61 +61,60 @@ class _NotificationScreenState extends State<NotificationScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Notifications'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
         actions: [
           TextButton(
             onPressed: _markAllRead,
-            child: const Text(
-              'Mark all read',
-              style: TextStyle(color: Colors.white),
-            ),
+            child: const Text('Mark all read'),
           ),
         ],
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: Colors.white,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
+          indicatorColor: AppColors.primary,
+          labelColor: AppColors.primary,
+          unselectedLabelColor:
+              Theme.of(context).colorScheme.onSurfaceVariant,
           tabs: const [
             Tab(text: 'Alerts'),
             Tab(text: 'Activity'),
           ],
         ),
       ),
-      body: FutureBuilder<Map<String, dynamic>>(
-        future: _future,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting &&
-              !snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text('Failed to load: ${snapshot.error}'));
-          }
+      body: SafeArea(
+        top: false,
+        child: FutureBuilder<Map<String, dynamic>>(
+          future: _future,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting &&
+                !snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return Center(child: Text('Failed to load: ${snapshot.error}'));
+            }
 
-          final data = snapshot.data!;
-          final alerts =
-              List<Map<String, dynamic>>.from(data['alerts'] ?? []);
-          final activities =
-              List<Map<String, dynamic>>.from(data['activities'] ?? []);
+            final data = snapshot.data!;
+            final alerts =
+                List<Map<String, dynamic>>.from(data['alerts'] ?? []);
+            final activities =
+                List<Map<String, dynamic>>.from(data['activities'] ?? []);
 
-          return TabBarView(
-            controller: _tabController,
-            children: [
-              _NotificationList(
-                items: alerts,
-                emptyText: 'No alerts right now.',
-                onRefresh: _refresh,
-              ),
-              _NotificationList(
-                items: activities,
-                emptyText: 'No recent activity.',
-                onRefresh: _refresh,
-              ),
-            ],
-          );
-        },
+            return TabBarView(
+              controller: _tabController,
+              children: [
+                _NotificationList(
+                  items: alerts,
+                  emptyText: 'No alerts right now.',
+                  onRefresh: _refresh,
+                ),
+                _NotificationList(
+                  items: activities,
+                  emptyText: 'No recent activity.',
+                  onRefresh: _refresh,
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }

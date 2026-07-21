@@ -50,10 +50,10 @@ class MenuScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Menu'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
       ),
-      body: ListView(
+      body: SafeArea(
+        top: false,
+        child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           Container(
@@ -172,6 +172,7 @@ class MenuScreen extends StatelessWidget {
             onTap: () => _logout(context),
           ),
         ],
+        ),
       ),
     );
   }

@@ -101,7 +101,9 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(width: 6),
         ],
       ),
-      body: RefreshIndicator(
+      body: SafeArea(
+        top: false,
+        child: RefreshIndicator(
         onRefresh: _refresh,
         child: FutureBuilder<_HomeData>(
           future: _future,
@@ -228,6 +230,7 @@ class _HomeScreenState extends State<HomeScreen> {
             );
           },
         ),
+        ),
       ),
     );
   }
@@ -302,7 +305,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: entries
             .map((e) => StatCard(
                   label: _prettyLabel(e.key),
-                  value: _formatValue(e.key, e.value as num),
+                  value: _formatValue(e.key, _asNum(e.value)),
                   icon: _iconFor(e.key),
                 ))
             .toList(),
@@ -310,8 +313,17 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
   }
 
+  /// Backend rows from raw SQL queries can come back as numeric strings
+  /// (MySQLi doesn't always cast); coerce defensively instead of `as num`.
+  num _asNum(dynamic value) {
+    if (value is num) return value;
+    return num.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
   bool _isDisplayableStat(String key, dynamic value) {
-    if (value is! num) return false;
+    if (value is! num && num.tryParse(value?.toString() ?? '') == null) {
+      return false;
+    }
     if (key == 'user_id' ||
         key.endsWith('_id') ||
         key.endsWith('_id_fk') ||

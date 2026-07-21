@@ -211,10 +211,10 @@ class _WallScreenState extends State<WallScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Wall'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
       ),
-      body: RefreshIndicator(
+      body: SafeArea(
+        top: false,
+        child: RefreshIndicator(
         onRefresh: _loadFirstPage,
         child: _loading
             ? const Center(child: CircularProgressIndicator())
@@ -269,6 +269,7 @@ class _WallScreenState extends State<WallScreen> {
                       ],
                     ),
                   ),
+        ),
       ),
     );
   }
