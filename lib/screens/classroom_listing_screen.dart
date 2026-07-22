@@ -8,6 +8,7 @@ import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/classroom_card.dart';
 import 'classroom_detail_screen.dart';
+import 'classroom_full_detail_screen.dart';
 
 enum ClassroomViewMode { card, list, table }
 
@@ -277,12 +278,17 @@ class _ClassroomListingScreenState extends State<ClassroomListingScreen> {
     final isPastYear = _showYearTabs &&
         _selectedYear != null &&
         _selectedYear != DateTime.now().year;
+    final classId = (classroom['id'] as num).toInt();
+    final rowChildId = classroom['childUserId'] is num ? (classroom['childUserId'] as num).toInt() : null;
     final result = await Navigator.of(context).push<dynamic>(
       MaterialPageRoute(
-        builder: (_) => ClassroomDetailScreen(
-          classId: (classroom['id'] as num).toInt(),
-          readOnly: isPastYear,
-        ),
+        builder: (_) => widget.scope == 'all'
+            ? ClassroomDetailScreen(classId: classId, readOnly: isPastYear)
+            : ClassroomFullDetailScreen(
+                classId: classId,
+                childId: widget.scope == 'child' ? (rowChildId ?? widget.childId) : null,
+                readOnly: isPastYear,
+              ),
       ),
     );
     if (result is Map && result['deleted'] == true) {

@@ -9,8 +9,9 @@ import 'subject_dashboard_screen.dart';
 
 class ClassroomSubjectsScreen extends StatefulWidget {
   final int classId;
+  final int? childId;
 
-  const ClassroomSubjectsScreen({super.key, required this.classId});
+  const ClassroomSubjectsScreen({super.key, required this.classId, this.childId});
 
   @override
   State<ClassroomSubjectsScreen> createState() => _ClassroomSubjectsScreenState();
@@ -37,7 +38,7 @@ class _ClassroomSubjectsScreenState extends State<ClassroomSubjectsScreen> {
       _error = null;
     });
     try {
-      final subjects = await _client.getClassroomSubjects(widget.classId);
+      final subjects = await _client.getClassroomSubjects(widget.classId, childId: widget.childId);
       final core = List<Map<String, dynamic>>.from(subjects['core'] ?? []);
       final optionalField = subjects['optional'];
       final optionalRaw = optionalField is Map ? Map<String, dynamic>.from(optionalField) : <String, dynamic>{};
@@ -130,9 +131,23 @@ class _ClassroomSubjectsScreenState extends State<ClassroomSubjectsScreen> {
                       padding: const EdgeInsets.all(16),
                       children: [
                         if (_core.isEmpty && _optional.isEmpty)
-                          const Padding(
-                            padding: EdgeInsets.only(top: 80),
-                            child: Center(child: Text('No subjects assigned yet.')),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 80),
+                            child: Center(
+                              child: Column(
+                                children: [
+                                  Icon(Icons.menu_book_outlined, size: 32, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    widget.childId != null
+                                        ? 'This child is not taking any subjects in this classroom yet.'
+                                        : 'No subjects assigned yet.',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         if (_core.isNotEmpty) ...[
                           const Text('Core Subjects',

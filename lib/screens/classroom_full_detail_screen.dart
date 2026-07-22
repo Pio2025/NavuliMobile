@@ -5,26 +5,35 @@ import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/classroom_overview_body.dart';
-import 'classroom_captains_screen.dart';
+import 'classroom_attendance_screen.dart';
+import 'classroom_discussion_screen.dart';
+import 'classroom_exam_screen.dart';
 import 'classroom_form_screen.dart';
 import 'classroom_students_screen.dart';
 import 'classroom_subjects_screen.dart';
-import 'classroom_teachers_screen.dart';
 
-/// Read-only classroom detail reached from "Classroom Listing" (scope=all).
-/// Top-right icons are all view-only: Students, Subjects, Class Teachers,
-/// Class Captains.
-class ClassroomDetailScreen extends StatefulWidget {
+/// Classroom detail reached from "My Classroom" (scope=mine) or
+/// "My Child Classroom" (scope=child, [childId] set). Top-right icons:
+/// Students, Subjects (filtered to the child's subjects when [childId] is
+/// set), Attendance, Exam, Discussion. Overview body is identical to
+/// [ClassroomDetailScreen] — only the icons/navigation differ.
+class ClassroomFullDetailScreen extends StatefulWidget {
   final int classId;
+  final int? childId;
   final bool readOnly;
 
-  const ClassroomDetailScreen({super.key, required this.classId, this.readOnly = false});
+  const ClassroomFullDetailScreen({
+    super.key,
+    required this.classId,
+    this.childId,
+    this.readOnly = false,
+  });
 
   @override
-  State<ClassroomDetailScreen> createState() => _ClassroomDetailScreenState();
+  State<ClassroomFullDetailScreen> createState() => _ClassroomFullDetailScreenState();
 }
 
-class _ClassroomDetailScreenState extends State<ClassroomDetailScreen> {
+class _ClassroomFullDetailScreenState extends State<ClassroomFullDetailScreen> {
   late ApiClient _client;
   bool _loading = true;
   bool _busy = false;
@@ -146,17 +155,24 @@ class _ClassroomDetailScreenState extends State<ClassroomDetailScreen> {
             IconButton(
               icon: const Icon(Icons.menu_book_outlined),
               tooltip: 'Subjects',
-              onPressed: () => _openTab((id) => ClassroomSubjectsScreen(classId: id)),
+              onPressed: () => _openTab(
+                (id) => ClassroomSubjectsScreen(classId: id, childId: widget.childId),
+              ),
             ),
             IconButton(
-              icon: const Icon(Icons.school_outlined),
-              tooltip: 'Class Teachers',
-              onPressed: () => _openTab((id) => ClassroomTeachersScreen(classId: id)),
+              icon: const Icon(Icons.event_available_outlined),
+              tooltip: 'Attendance',
+              onPressed: () => _openTab((id) => ClassroomAttendanceScreen(classId: id)),
             ),
             IconButton(
-              icon: const Icon(Icons.military_tech_outlined),
-              tooltip: 'Class Captains',
-              onPressed: () => _openTab((id) => ClassroomCaptainsScreen(classId: id)),
+              icon: const Icon(Icons.fact_check_outlined),
+              tooltip: 'Exam',
+              onPressed: () => _openTab((id) => ClassroomExamScreen(classId: id)),
+            ),
+            IconButton(
+              icon: const Icon(Icons.forum_outlined),
+              tooltip: 'Discussion',
+              onPressed: () => _openTab((id) => ClassroomDiscussionScreen(classId: id)),
             ),
           ],
         ),

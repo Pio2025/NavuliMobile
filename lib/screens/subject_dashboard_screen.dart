@@ -6,68 +6,51 @@ import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
 
-class SubjectDashboardScreen extends StatefulWidget {
-  final Map<String, dynamic> subject;
+// ── shared navigation bits ─────────────────────────────────────────────────
 
-  const SubjectDashboardScreen({super.key, required this.subject});
-
-  @override
-  State<SubjectDashboardScreen> createState() => _SubjectDashboardScreenState();
-}
-
-class _SubjectDashboardScreenState extends State<SubjectDashboardScreen>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tabController;
-
-  int get _classSubId => ((widget.subject['class_sub_id'] as num?) ?? 0).toInt();
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 4, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('${widget.subject['subject_name'] ?? 'Subject'}'),
-        bottom: TabBar(
-          controller: _tabController,
-          isScrollable: true,
-          tabs: const [
-            Tab(text: 'Dashboard'),
-            Tab(text: 'Lessons'),
-            Tab(text: 'Assignments'),
-            Tab(text: 'Feedback'),
-          ],
-        ),
-      ),
-      body: SafeArea(
-        top: false,
-        child: TabBarView(
-          controller: _tabController,
-          children: [
-            _DashboardTab(classSubId: _classSubId),
-            _LessonsTab(classSubId: _classSubId),
-            _AssignmentsTab(classSubId: _classSubId),
-            _FeedbackTab(classSubId: _classSubId),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── shared bits ───────────────────────────────────────────────────────────
+enum _Section { dashboard, lessons, assignments, feedback }
 
 num _asNum(dynamic v) => (v is num) ? v : (num.tryParse('$v') ?? 0);
+
+int _classSubIdOf(Map<String, dynamic> subject) => _asNum(subject['class_sub_id']).toInt();
+
+void _switchSection(BuildContext context, Map<String, dynamic> subject, _Section target) {
+  Widget screen;
+  switch (target) {
+    case _Section.dashboard:
+      screen = SubjectDashboardScreen(subject: subject);
+      break;
+    case _Section.lessons:
+      screen = SubjectLessonsScreen(subject: subject);
+      break;
+    case _Section.assignments:
+      screen = SubjectAssignmentsScreen(subject: subject);
+      break;
+    case _Section.feedback:
+      screen = SubjectFeedbackScreen(subject: subject);
+      break;
+  }
+  Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => screen));
+}
+
+List<Widget> _sectionActions(BuildContext context, Map<String, dynamic> subject, _Section current) {
+  final scheme = Theme.of(context).colorScheme;
+  Widget action(_Section section, IconData icon, String tooltip) {
+    final active = section == current;
+    return IconButton(
+      icon: Icon(icon, color: active ? AppColors.primary : scheme.onSurfaceVariant),
+      tooltip: tooltip,
+      onPressed: active ? null : () => _switchSection(context, subject, section),
+    );
+  }
+
+  return [
+    action(_Section.dashboard, Icons.dashboard_outlined, 'Dashboard'),
+    action(_Section.lessons, Icons.menu_book_outlined, 'Lessons'),
+    action(_Section.assignments, Icons.assignment_outlined, 'Assignments'),
+    action(_Section.feedback, Icons.rate_review_outlined, 'Feedback'),
+  ];
+}
 
 Color _scoreColor(num v) {
   if (v >= 70) return AppColors.success;
@@ -111,21 +94,23 @@ Widget _emptyHint(BuildContext context, String text) {
   );
 }
 
-// ── DASHBOARD TAB ────────────────────────────────────────────────────────
+// ── DASHBOARD ────────────────────────────────────────────────────────────
 
-class _DashboardTab extends StatefulWidget {
-  final int classSubId;
-  const _DashboardTab({required this.classSubId});
+class SubjectDashboardScreen extends StatefulWidget {
+  final Map<String, dynamic> subject;
+  const SubjectDashboardScreen({super.key, required this.subject});
 
   @override
-  State<_DashboardTab> createState() => _DashboardTabState();
+  State<SubjectDashboardScreen> createState() => _SubjectDashboardScreenState();
 }
 
-class _DashboardTabState extends State<_DashboardTab> {
+class _SubjectDashboardScreenState extends State<SubjectDashboardScreen> {
   late ApiClient _client;
   bool _loading = true;
   String? _error;
   Map<String, dynamic> _stats = {};
+
+  int get _classSubId => _classSubIdOf(widget.subject);
 
   @override
   void initState() {
@@ -140,7 +125,7 @@ class _DashboardTabState extends State<_DashboardTab> {
       _error = null;
     });
     try {
-      final body = await _client.getSubjectDashboard(widget.classSubId);
+      final body = await _client.getSubjectDashboard(_classSubId);
       setState(() {
         _stats = Map<String, dynamic>.from(body['stats'] ?? {});
         _loading = false;
@@ -422,8 +407,7 @@ class _DashboardTabState extends State<_DashboardTab> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildBody() {
     if (_loading) return const Center(child: CircularProgressIndicator());
     if (_error != null) return Center(child: Text('Failed to load dashboard: $_error'));
 
@@ -487,25 +471,38 @@ class _DashboardTabState extends State<_DashboardTab> {
       ),
     );
   }
-}
-
-// ── LESSONS TAB ──────────────────────────────────────────────────────────
-
-class _LessonsTab extends StatefulWidget {
-  final int classSubId;
-  const _LessonsTab({required this.classSubId});
 
   @override
-  State<_LessonsTab> createState() => _LessonsTabState();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('${widget.subject['subject_name'] ?? 'Subject'}'),
+        actions: _sectionActions(context, widget.subject, _Section.dashboard),
+      ),
+      body: SafeArea(top: false, child: _buildBody()),
+    );
+  }
 }
 
-class _LessonsTabState extends State<_LessonsTab> {
+// ── LESSONS ──────────────────────────────────────────────────────────────
+
+class SubjectLessonsScreen extends StatefulWidget {
+  final Map<String, dynamic> subject;
+  const SubjectLessonsScreen({super.key, required this.subject});
+
+  @override
+  State<SubjectLessonsScreen> createState() => _SubjectLessonsScreenState();
+}
+
+class _SubjectLessonsScreenState extends State<SubjectLessonsScreen> {
   late ApiClient _client;
   bool _loading = true;
   String? _error;
   List<Map<String, dynamic>> _lessons = [];
 
   static const _terms = {1: 'Term 1', 2: 'Term 2', 3: 'Term 3'};
+
+  int get _classSubId => _classSubIdOf(widget.subject);
 
   @override
   void initState() {
@@ -520,7 +517,7 @@ class _LessonsTabState extends State<_LessonsTab> {
       _error = null;
     });
     try {
-      final body = await _client.getSubjectLessons(widget.classSubId);
+      final body = await _client.getSubjectLessons(_classSubId);
       setState(() {
         _lessons = List<Map<String, dynamic>>.from(body['lessons'] ?? []);
         _loading = false;
@@ -533,8 +530,7 @@ class _LessonsTabState extends State<_LessonsTab> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildBody() {
     final scheme = Theme.of(context).colorScheme;
     if (_loading) return const Center(child: CircularProgressIndicator());
     if (_error != null) return Center(child: Text('Failed to load lessons: $_error'));
@@ -592,23 +588,36 @@ class _LessonsTabState extends State<_LessonsTab> {
       ),
     );
   }
-}
-
-// ── ASSIGNMENTS TAB ──────────────────────────────────────────────────────
-
-class _AssignmentsTab extends StatefulWidget {
-  final int classSubId;
-  const _AssignmentsTab({required this.classSubId});
 
   @override
-  State<_AssignmentsTab> createState() => _AssignmentsTabState();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('${widget.subject['subject_name'] ?? 'Subject'}'),
+        actions: _sectionActions(context, widget.subject, _Section.lessons),
+      ),
+      body: SafeArea(top: false, child: _buildBody()),
+    );
+  }
 }
 
-class _AssignmentsTabState extends State<_AssignmentsTab> {
+// ── ASSIGNMENTS ──────────────────────────────────────────────────────────
+
+class SubjectAssignmentsScreen extends StatefulWidget {
+  final Map<String, dynamic> subject;
+  const SubjectAssignmentsScreen({super.key, required this.subject});
+
+  @override
+  State<SubjectAssignmentsScreen> createState() => _SubjectAssignmentsScreenState();
+}
+
+class _SubjectAssignmentsScreenState extends State<SubjectAssignmentsScreen> {
   late ApiClient _client;
   bool _loading = true;
   String? _error;
   Map<String, dynamic> _body = {};
+
+  int get _classSubId => _classSubIdOf(widget.subject);
 
   @override
   void initState() {
@@ -623,7 +632,7 @@ class _AssignmentsTabState extends State<_AssignmentsTab> {
       _error = null;
     });
     try {
-      final body = await _client.getSubjectAssignments(widget.classSubId);
+      final body = await _client.getSubjectAssignments(_classSubId);
       setState(() {
         _body = body;
         _loading = false;
@@ -723,8 +732,7 @@ class _AssignmentsTabState extends State<_AssignmentsTab> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildBody() {
     if (_loading) return const Center(child: CircularProgressIndicator());
     if (_error != null) return Center(child: Text('Failed to load assignments: $_error'));
     final mode = '${_body['mode'] ?? ''}';
@@ -741,19 +749,30 @@ class _AssignmentsTabState extends State<_AssignmentsTab> {
       ),
     );
   }
-}
-
-// ── FEEDBACK TAB ─────────────────────────────────────────────────────────
-
-class _FeedbackTab extends StatefulWidget {
-  final int classSubId;
-  const _FeedbackTab({required this.classSubId});
 
   @override
-  State<_FeedbackTab> createState() => _FeedbackTabState();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('${widget.subject['subject_name'] ?? 'Subject'}'),
+        actions: _sectionActions(context, widget.subject, _Section.assignments),
+      ),
+      body: SafeArea(top: false, child: _buildBody()),
+    );
+  }
 }
 
-class _FeedbackTabState extends State<_FeedbackTab> {
+// ── FEEDBACK ─────────────────────────────────────────────────────────────
+
+class SubjectFeedbackScreen extends StatefulWidget {
+  final Map<String, dynamic> subject;
+  const SubjectFeedbackScreen({super.key, required this.subject});
+
+  @override
+  State<SubjectFeedbackScreen> createState() => _SubjectFeedbackScreenState();
+}
+
+class _SubjectFeedbackScreenState extends State<SubjectFeedbackScreen> {
   late ApiClient _client;
   bool _loading = true;
   bool _submitting = false;
@@ -766,6 +785,8 @@ class _FeedbackTabState extends State<_FeedbackTab> {
   int _engagement = 0;
   final _commentCtrl = TextEditingController();
   bool _anonymous = false;
+
+  int get _classSubId => _classSubIdOf(widget.subject);
 
   @override
   void initState() {
@@ -786,7 +807,7 @@ class _FeedbackTabState extends State<_FeedbackTab> {
       _error = null;
     });
     try {
-      final body = await _client.getSubjectFeedback(widget.classSubId);
+      final body = await _client.getSubjectFeedback(_classSubId);
       final existing = body['feedback'] is Map ? Map<String, dynamic>.from(body['feedback']) : null;
       setState(() {
         _body = body;
@@ -818,7 +839,7 @@ class _FeedbackTabState extends State<_FeedbackTab> {
     setState(() => _submitting = true);
     try {
       await _client.submitSubjectFeedback(
-        widget.classSubId,
+        _classSubId,
         overallRating: _overall,
         teachingRating: _teaching,
         contentRating: _content,
@@ -870,7 +891,7 @@ class _FeedbackTabState extends State<_FeedbackTab> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Rate this subject', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+        const Text('Rate this subject', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
         const SizedBox(height: 12),
         _starRow('Overall', _overall, (v) => setState(() => _overall = v)),
         _starRow('Teaching', _teaching, (v) => setState(() => _teaching = v)),
@@ -1005,8 +1026,7 @@ class _FeedbackTabState extends State<_FeedbackTab> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildBody() {
     if (_loading) return const Center(child: CircularProgressIndicator());
     if (_error != null) return Center(child: Text('Failed to load feedback: $_error'));
     final mode = '${_body['mode'] ?? ''}';
@@ -1023,6 +1043,17 @@ class _FeedbackTabState extends State<_FeedbackTab> {
             _sectionCard(context, title: 'Your Feedback', child: _selfForm()),
         ],
       ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('${widget.subject['subject_name'] ?? 'Subject'}'),
+        actions: _sectionActions(context, widget.subject, _Section.feedback),
+      ),
+      body: SafeArea(top: false, child: _buildBody()),
     );
   }
 }

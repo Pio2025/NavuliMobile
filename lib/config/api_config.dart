@@ -13,7 +13,9 @@ class ApiConfig {
   static const String classroomListUrl = '$baseUrl/api/classroom';
   static const String classroomStreamsUrl = '$baseUrl/api/classroom/streams';
   static String classroomUrl(int id) => '$baseUrl/api/classroom/$id';
-  static String classroomSubjectsUrl(int id) => '$baseUrl/api/classroom/$id/subjects';
+  static String classroomSubjectsUrl(int id, {int? childId}) => childId != null
+      ? '$baseUrl/api/classroom/$id/subjects?childId=$childId'
+      : '$baseUrl/api/classroom/$id/subjects';
   static String classroomStaffUrl(int id) => '$baseUrl/api/classroom/$id/staff';
   static String classroomStudentsUrl(int id) => '$baseUrl/api/classroom/$id/students';
   static String classroomAttendanceUrl(int id) => '$baseUrl/api/classroom/$id/attendance';

@@ -490,9 +490,9 @@ class ApiClient {
     return body;
   }
 
-  Future<Map<String, dynamic>> getClassroomSubjects(int id) async {
+  Future<Map<String, dynamic>> getClassroomSubjects(int id, {int? childId}) async {
     final res = await http
-        .get(Uri.parse(ApiConfig.classroomSubjectsUrl(id)), headers: auth.authHeaders)
+        .get(Uri.parse(ApiConfig.classroomSubjectsUrl(id, childId: childId)), headers: auth.authHeaders)
         .timeout(const Duration(seconds: 20));
     final body = jsonDecode(res.body) as Map<String, dynamic>;
     if (res.statusCode != 200 || body['success'] != true) {
