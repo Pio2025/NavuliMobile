@@ -7,12 +7,16 @@ import '../services/auth_service.dart';
 class ClassroomFormScreen extends StatefulWidget {
   final List<Map<String, dynamic>> schools;
   final bool canChooseSchool;
+  final Map<String, dynamic>? existingClassroom;
 
   const ClassroomFormScreen({
     super.key,
     this.schools = const [],
     this.canChooseSchool = false,
+    this.existingClassroom,
   });
+
+  bool get isEditing => existingClassroom != null;
 
   @override
   State<ClassroomFormScreen> createState() => _ClassroomFormScreenState();
@@ -28,8 +32,7 @@ class _ClassroomFormScreenState extends State<ClassroomFormScreen> {
   bool _loadingStreams = false;
 
   final _nameController = TextEditingController();
-  late final _yearController =
-      TextEditingController(text: '${DateTime.now().year}');
+  late final TextEditingController _yearController;
   String _status = 'Active';
 
   bool _saving = false;
@@ -39,8 +42,18 @@ class _ClassroomFormScreenState extends State<ClassroomFormScreen> {
   void initState() {
     super.initState();
     _client = ApiClient(context.read<AuthService>());
-    if (!widget.canChooseSchool) {
-      _loadStreams();
+    final existing = widget.existingClassroom;
+    _yearController = TextEditingController(
+      text: '${existing?['year'] ?? DateTime.now().year}',
+    );
+    if (existing != null) {
+      _schoolId = existing['schoolId'] as int?;
+      _streamId = existing['streamId'] as int?;
+      _nameController.text = '${existing['name'] ?? ''}';
+      _status = '${existing['status'] ?? 'Active'}';
+    }
+    if (!widget.canChooseSchool || existing != null) {
+      _loadStreams(preserveSelection: existing != null);
     }
   }
 
@@ -51,15 +64,17 @@ class _ClassroomFormScreenState extends State<ClassroomFormScreen> {
     super.dispose();
   }
 
-  Future<void> _loadStreams() async {
+  Future<void> _loadStreams({bool preserveSelection = false}) async {
+    final keepStreamId = preserveSelection ? _streamId : null;
     setState(() {
       _loadingStreams = true;
-      _streamId = null;
+      if (!preserveSelection) _streamId = null;
     });
     try {
       final streams = await _client.getClassroomStreams(schId: _schoolId);
       setState(() {
         _streams = streams;
+        _streamId = keepStreamId;
         _loadingStreams = false;
       });
     } catch (e) {
@@ -80,13 +95,23 @@ class _ClassroomFormScreenState extends State<ClassroomFormScreen> {
       _error = null;
     });
     try {
-      await _client.createClassroom(
-        streamId: _streamId!,
-        className: _nameController.text.trim(),
-        classYear: int.parse(_yearController.text.trim()),
-        classStatus: _status,
-        schId: widget.canChooseSchool ? _schoolId : null,
-      );
+      if (widget.isEditing) {
+        await _client.updateClassroom(
+          (widget.existingClassroom!['id'] as num).toInt(),
+          streamId: _streamId!,
+          className: _nameController.text.trim(),
+          classYear: int.parse(_yearController.text.trim()),
+          classStatus: _status,
+        );
+      } else {
+        await _client.createClassroom(
+          streamId: _streamId!,
+          className: _nameController.text.trim(),
+          classYear: int.parse(_yearController.text.trim()),
+          classStatus: _status,
+          schId: widget.canChooseSchool ? _schoolId : null,
+        );
+      }
       if (!mounted) return;
       Navigator.of(context).pop(true);
     } catch (e) {
@@ -100,7 +125,7 @@ class _ClassroomFormScreenState extends State<ClassroomFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Add Classroom')),
+      appBar: AppBar(title: Text(widget.isEditing ? 'Edit Classroom' : 'Add Classroom')),
       body: SafeArea(
         top: false,
         child: Form(
@@ -193,7 +218,7 @@ class _ClassroomFormScreenState extends State<ClassroomFormScreen> {
                         height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
-                    : const Text('Save'),
+                    : Text(widget.isEditing ? 'Save changes' : 'Save'),
               ),
             ],
           ),

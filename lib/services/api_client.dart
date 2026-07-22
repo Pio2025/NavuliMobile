@@ -443,6 +443,42 @@ class ApiClient {
     return Map<String, dynamic>.from(body['classroom']);
   }
 
+  Future<Map<String, dynamic>> updateClassroom(
+    int id, {
+    required int streamId,
+    required String className,
+    required int classYear,
+    String classStatus = 'Active',
+  }) async {
+    final res = await http
+        .put(
+          Uri.parse(ApiConfig.classroomUrl(id)),
+          headers: {...auth.authHeaders, 'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'stream_id': streamId,
+            'class_name': className,
+            'class_year': classYear,
+            'class_status': classStatus,
+          }),
+        )
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to update classroom.');
+    }
+    return Map<String, dynamic>.from(body['classroom']);
+  }
+
+  Future<void> deleteClassroom(int id) async {
+    final res = await http
+        .delete(Uri.parse(ApiConfig.classroomUrl(id)), headers: auth.authHeaders)
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to delete classroom.');
+    }
+  }
+
   Future<Map<String, dynamic>> getClassroomDetail(int id) async {
     final res = await http
         .get(Uri.parse(ApiConfig.classroomUrl(id)), headers: auth.authHeaders)

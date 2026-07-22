@@ -33,4 +33,12 @@ class ApiConfig {
     }
     return '$baseUrl/uploads/profilePhoto/$photo';
   }
+
+  static String schoolLogoUrl(String logo) {
+    if (logo.isEmpty) return '';
+    if (logo.startsWith('http://') || logo.startsWith('https://')) {
+      return logo;
+    }
+    return '$baseUrl/uploads/school/logo/$logo';
+  }
 }
