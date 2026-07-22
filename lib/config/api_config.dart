@@ -38,6 +38,7 @@ class ApiConfig {
   static String lessonDiscussionCommentReplyUrl(int commentId) => '$baseUrl/api/classroom/lesson/discussion/comment/$commentId/reply';
   static String lessonDiscussionReplyLikeUrl(int replyId) => '$baseUrl/api/classroom/lesson/discussion/reply/$replyId/like';
   static String lessonDiscussionReplyReactionsUrl(int replyId) => '$baseUrl/api/classroom/lesson/discussion/reply/$replyId/reactions';
+  static String lessonDiscussionReplyReplyUrl(int replyId) => '$baseUrl/api/classroom/lesson/discussion/reply/$replyId/reply';
 
   static String lessonFileUrl(String path) {
     if (path.isEmpty) return '';

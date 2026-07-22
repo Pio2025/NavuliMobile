@@ -783,6 +783,21 @@ class ApiClient {
     return List<Map<String, dynamic>>.from(body['reactions'] ?? []);
   }
 
+  Future<Map<String, dynamic>> replyToLessonDiscussionReply(int replyId, String reply) async {
+    final res = await http
+        .post(
+          Uri.parse(ApiConfig.lessonDiscussionReplyReplyUrl(replyId)),
+          headers: {...auth.authHeaders, 'Content-Type': 'application/json'},
+          body: jsonEncode({'reply': reply}),
+        )
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to add reply.');
+    }
+    return Map<String, dynamic>.from(body['reply']);
+  }
+
   Future<List<Map<String, dynamic>>> getLessonDiscussionReplyReactions(int replyId) async {
     final res = await http
         .get(Uri.parse(ApiConfig.lessonDiscussionReplyReactionsUrl(replyId)), headers: auth.authHeaders)

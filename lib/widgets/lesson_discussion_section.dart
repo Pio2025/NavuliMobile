@@ -108,7 +108,11 @@ class _ReactionsSheet extends StatelessWidget {
   }
 }
 
-Map<String, dynamic> _cloneReply(Map<String, dynamic> r) => Map<String, dynamic>.from(r);
+Map<String, dynamic> _cloneReply(Map<String, dynamic> r) => {
+      ...Map<String, dynamic>.from(r),
+      'replies': List<Map<String, dynamic>>.from(
+          (r['replies'] as List? ?? []).map((x) => _cloneReply(Map<String, dynamic>.from(x)))),
+    };
 
 Map<String, dynamic> _cloneComment(Map<String, dynamic> c) => {
       ...Map<String, dynamic>.from(c),
@@ -556,8 +560,8 @@ class _CommentsSheet extends StatefulWidget {
 
 class _CommentsSheetState extends State<_CommentsSheet> {
   final _commentCtrl = TextEditingController();
-  final Map<int, TextEditingController> _replyCtrls = {};
-  int? _replyingTo;
+  final Map<String, TextEditingController> _replyCtrls = {};
+  String? _replyingToKey;
   bool _sendingComment = false;
   bool _sendingReply = false;
 
@@ -591,7 +595,8 @@ class _CommentsSheetState extends State<_CommentsSheet> {
 
   Future<void> _sendReply(Map<String, dynamic> comment) async {
     final commentId = _asInt(comment['comment_id']);
-    final ctrl = _replyCtrls[commentId];
+    final key = 'c$commentId';
+    final ctrl = _replyCtrls[key];
     final text = ctrl?.text.trim() ?? '';
     if (text.isEmpty) return;
     setState(() => _sendingReply = true);
@@ -600,7 +605,29 @@ class _CommentsSheetState extends State<_CommentsSheet> {
       setState(() {
         (comment['replies'] as List<Map<String, dynamic>>).add(_cloneReply(reply));
         ctrl?.clear();
-        _replyingTo = null;
+        _replyingToKey = null;
+        _sendingReply = false;
+      });
+    } catch (e) {
+      setState(() => _sendingReply = false);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+    }
+  }
+
+  Future<void> _sendNestedReply(Map<String, dynamic> parentReply) async {
+    final parentReplyId = _asInt(parentReply['reply_id']);
+    final key = 'r$parentReplyId';
+    final ctrl = _replyCtrls[key];
+    final text = ctrl?.text.trim() ?? '';
+    if (text.isEmpty) return;
+    setState(() => _sendingReply = true);
+    try {
+      final reply = await widget.client.replyToLessonDiscussionReply(parentReplyId, text);
+      setState(() {
+        (parentReply['replies'] as List<Map<String, dynamic>>).add(_cloneReply(reply));
+        ctrl?.clear();
+        _replyingToKey = null;
         _sendingReply = false;
       });
     } catch (e) {
@@ -727,10 +754,14 @@ class _CommentsSheetState extends State<_CommentsSheet> {
     );
   }
 
-  Widget _replyTile(Map<String, dynamic> r) {
+  Widget _replyTile(Map<String, dynamic> r, {int depth = 0}) {
     final replyId = _asInt(r['reply_id']);
+    final key = 'r$replyId';
+    final nested = List<Map<String, dynamic>>.from(r['replies'] as List? ?? []);
+    final ctrl = _replyCtrls.putIfAbsent(key, () => TextEditingController());
+    final indent = 26.0 + (depth * 20).clamp(0, 60);
     return Padding(
-      padding: const EdgeInsets.only(top: 10, left: 26),
+      padding: EdgeInsets.only(top: 10, left: indent),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -741,8 +772,35 @@ class _CommentsSheetState extends State<_CommentsSheet> {
           ),
           Padding(
             padding: const EdgeInsets.only(left: 30, top: 3),
-            child: _reactionRow(r, _reactToReply, fetchReactions: () => widget.client.getLessonDiscussionReplyReactions(replyId)),
+            child: _reactionRow(
+              r,
+              _reactToReply,
+              onReply: () => setState(() => _replyingToKey = _replyingToKey == key ? null : key),
+              fetchReactions: () => widget.client.getLessonDiscussionReplyReactions(replyId),
+            ),
           ),
+          if (_replyingToKey == key)
+            Padding(
+              padding: const EdgeInsets.only(left: 30, top: 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: ctrl,
+                      decoration: const InputDecoration(hintText: 'Write a reply...', isDense: true),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  IconButton(
+                    icon: _sendingReply
+                        ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Icon(Icons.send, size: 18, color: AppColors.primary),
+                    onPressed: _sendingReply ? null : () => _sendNestedReply(r),
+                  ),
+                ],
+              ),
+            ),
+          for (final nr in nested) _replyTile(nr, depth: depth + 1),
         ],
       ),
     );
@@ -750,8 +808,9 @@ class _CommentsSheetState extends State<_CommentsSheet> {
 
   Widget _commentTile(Map<String, dynamic> c) {
     final commentId = _asInt(c['comment_id']);
+    final key = 'c$commentId';
     final replies = List<Map<String, dynamic>>.from(c['replies'] as List? ?? []);
-    final ctrl = _replyCtrls.putIfAbsent(commentId, () => TextEditingController());
+    final ctrl = _replyCtrls.putIfAbsent(key, () => TextEditingController());
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Column(
@@ -767,12 +826,12 @@ class _CommentsSheetState extends State<_CommentsSheet> {
             child: _reactionRow(
               c,
               _reactToComment,
-              onReply: () => setState(() => _replyingTo = _replyingTo == commentId ? null : commentId),
+              onReply: () => setState(() => _replyingToKey = _replyingToKey == key ? null : key),
               fetchReactions: () => widget.client.getLessonDiscussionCommentReactions(commentId),
             ),
           ),
           for (final r in replies) _replyTile(r),
-          if (_replyingTo == commentId)
+          if (_replyingToKey == key)
             Padding(
               padding: const EdgeInsets.only(left: 26, top: 8),
               child: Row(
