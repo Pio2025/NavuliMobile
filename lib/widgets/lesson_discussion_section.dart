@@ -9,6 +9,105 @@ import '../services/api_client.dart';
 import '../theme/app_theme.dart';
 import '../utils/time_ago.dart';
 
+int _asInt(dynamic v) => v is num ? v.toInt() : (int.tryParse('$v') ?? 0);
+
+void showReactionsSheet(BuildContext context, Future<List<Map<String, dynamic>>> Function() loader) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => _ReactionsSheet(loader: loader),
+  );
+}
+
+class _ReactionsSheet extends StatelessWidget {
+  final Future<List<Map<String, dynamic>>> Function() loader;
+
+  const _ReactionsSheet({required this.loader});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.6),
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 10),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: scheme.onSurfaceVariant.withValues(alpha: 0.4),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Text('Reactions', style: TextStyle(fontWeight: FontWeight.w700)),
+          const SizedBox(height: 8),
+          Flexible(
+            child: FutureBuilder<List<Map<String, dynamic>>>(
+              future: loader(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState != ConnectionState.done) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 32),
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                if (snapshot.hasError) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 32),
+                    child: Center(child: Text('${snapshot.error}', style: TextStyle(color: scheme.error))),
+                  );
+                }
+                final reactions = snapshot.data ?? [];
+                if (reactions.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 32),
+                    child: Center(child: Text('No reactions yet.', style: TextStyle(color: scheme.onSurfaceVariant))),
+                  );
+                }
+                return ListView.separated(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  itemCount: reactions.length,
+                  separatorBuilder: (_, _) => const Divider(height: 1),
+                  itemBuilder: (context, i) {
+                    final r = reactions[i];
+                    final isLike = '${r['type']}' == 'like';
+                    final photo = '${r['photo'] ?? ''}';
+                    return ListTile(
+                      dense: true,
+                      leading: CircleAvatar(
+                        radius: 16,
+                        backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+                        backgroundImage: photo.isNotEmpty ? NetworkImage(ApiConfig.photoUrl(photo)) : null,
+                        child: photo.isEmpty ? const Icon(Icons.person, color: AppColors.primary, size: 16) : null,
+                      ),
+                      title: Text('${r['name'] ?? ''}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                      trailing: Icon(
+                        isLike ? Icons.thumb_up : Icons.thumb_down,
+                        size: 16,
+                        color: isLike ? AppColors.primary : AppColors.danger,
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+      ),
+    );
+  }
+}
+
 Map<String, dynamic> _cloneReply(Map<String, dynamic> r) => Map<String, dynamic>.from(r);
 
 Map<String, dynamic> _cloneComment(Map<String, dynamic> c) => {
@@ -95,7 +194,7 @@ class _LessonDiscussionSectionState extends State<LessonDiscussionSection> {
   }
 
   Future<void> _reactToPost(Map<String, dynamic> post, String type) async {
-    final discussionId = (post['lesson_discussion_id'] as num).toInt();
+    final discussionId = _asInt(post['lesson_discussion_id']);
     try {
       final result = await widget.client.likeLessonDiscussion(discussionId, type: type);
       setState(() {
@@ -110,7 +209,7 @@ class _LessonDiscussionSectionState extends State<LessonDiscussionSection> {
   }
 
   void _openComments(Map<String, dynamic> post) {
-    final discussionId = (post['lesson_discussion_id'] as num).toInt();
+    final discussionId = _asInt(post['lesson_discussion_id']);
     final comments = List<Map<String, dynamic>>.from(post['comments'] as List);
     showModalBottomSheet(
       context: context,
@@ -123,7 +222,7 @@ class _LessonDiscussionSectionState extends State<LessonDiscussionSection> {
         onCommentAdded: () {
           setState(() {
             post['comments'] = comments;
-            post['comment_count'] = ((post['comment_count'] as num?)?.toInt() ?? 0) + 1;
+            post['comment_count'] = _asInt(post['comment_count']) + 1;
           });
         },
       ),
@@ -224,6 +323,8 @@ class _LessonDiscussionSectionState extends State<LessonDiscussionSection> {
     final scheme = Theme.of(context).colorScheme;
     final photos = List<Map<String, dynamic>>.from(post['photos'] as List? ?? []);
     final reaction = post['user_reaction'];
+    final discussionId = _asInt(post['lesson_discussion_id']);
+    final totalReactions = _asInt(post['like_count']) + _asInt(post['dislike_count']);
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
@@ -300,6 +401,12 @@ class _LessonDiscussionSectionState extends State<LessonDiscussionSection> {
                 icon: Icon(Icons.mode_comment_outlined, size: 16, color: scheme.onSurfaceVariant),
                 label: Text('${post['comment_count'] ?? 0}', style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant)),
               ),
+              if (totalReactions > 0)
+                TextButton.icon(
+                  onPressed: () => showReactionsSheet(context, () => widget.client.getLessonDiscussionReactions(discussionId)),
+                  icon: Icon(Icons.people_outline, size: 15, color: scheme.onSurfaceVariant),
+                  label: Text('$totalReactions', style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant)),
+                ),
             ],
           ),
         ],
@@ -483,7 +590,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
   }
 
   Future<void> _sendReply(Map<String, dynamic> comment) async {
-    final commentId = (comment['comment_id'] as num).toInt();
+    final commentId = _asInt(comment['comment_id']);
     final ctrl = _replyCtrls[commentId];
     final text = ctrl?.text.trim() ?? '';
     if (text.isEmpty) return;
@@ -504,7 +611,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
   }
 
   Future<void> _reactToComment(Map<String, dynamic> comment, String type) async {
-    final commentId = (comment['comment_id'] as num).toInt();
+    final commentId = _asInt(comment['comment_id']);
     try {
       final result = await widget.client.likeLessonDiscussionComment(commentId, type: type);
       setState(() {
@@ -519,7 +626,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
   }
 
   Future<void> _reactToReply(Map<String, dynamic> reply, String type) async {
-    final replyId = (reply['reply_id'] as num).toInt();
+    final replyId = _asInt(reply['reply_id']);
     try {
       final result = await widget.client.likeLessonDiscussionReply(replyId, type: type);
       setState(() {
@@ -557,9 +664,15 @@ class _CommentsSheetState extends State<_CommentsSheet> {
     );
   }
 
-  Widget _reactionRow(Map<String, dynamic> target, Future<void> Function(Map<String, dynamic>, String) onReact, {VoidCallback? onReply}) {
+  Widget _reactionRow(
+    Map<String, dynamic> target,
+    Future<void> Function(Map<String, dynamic>, String) onReact, {
+    VoidCallback? onReply,
+    Future<List<Map<String, dynamic>>> Function()? fetchReactions,
+  }) {
     final scheme = Theme.of(context).colorScheme;
     final reaction = target['user_reaction'];
+    final totalReactions = _asInt(target['like_count']) + _asInt(target['dislike_count']);
     return Row(
       children: [
         GestureDetector(
@@ -589,6 +702,20 @@ class _CommentsSheetState extends State<_CommentsSheet> {
             ],
           ),
         ),
+        if (totalReactions > 0 && fetchReactions != null) ...[
+          const SizedBox(width: 14),
+          GestureDetector(
+            onTap: () => showReactionsSheet(context, fetchReactions),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.people_outline, size: 13, color: scheme.onSurfaceVariant),
+                const SizedBox(width: 3),
+                Text('$totalReactions', style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
+              ],
+            ),
+          ),
+        ],
         if (onReply != null) ...[
           const SizedBox(width: 14),
           GestureDetector(
@@ -601,6 +728,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
   }
 
   Widget _replyTile(Map<String, dynamic> r) {
+    final replyId = _asInt(r['reply_id']);
     return Padding(
       padding: const EdgeInsets.only(top: 10, left: 26),
       child: Column(
@@ -613,7 +741,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
           ),
           Padding(
             padding: const EdgeInsets.only(left: 30, top: 3),
-            child: _reactionRow(r, _reactToReply),
+            child: _reactionRow(r, _reactToReply, fetchReactions: () => widget.client.getLessonDiscussionReplyReactions(replyId)),
           ),
         ],
       ),
@@ -621,7 +749,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
   }
 
   Widget _commentTile(Map<String, dynamic> c) {
-    final commentId = (c['comment_id'] as num).toInt();
+    final commentId = _asInt(c['comment_id']);
     final replies = List<Map<String, dynamic>>.from(c['replies'] as List? ?? []);
     final ctrl = _replyCtrls.putIfAbsent(commentId, () => TextEditingController());
     return Padding(
@@ -636,7 +764,12 @@ class _CommentsSheetState extends State<_CommentsSheet> {
           ),
           Padding(
             padding: const EdgeInsets.only(left: 32, top: 4),
-            child: _reactionRow(c, _reactToComment, onReply: () => setState(() => _replyingTo = _replyingTo == commentId ? null : commentId)),
+            child: _reactionRow(
+              c,
+              _reactToComment,
+              onReply: () => setState(() => _replyingTo = _replyingTo == commentId ? null : commentId),
+              fetchReactions: () => widget.client.getLessonDiscussionCommentReactions(commentId),
+            ),
           ),
           for (final r in replies) _replyTile(r),
           if (_replyingTo == commentId)

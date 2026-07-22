@@ -31,10 +31,13 @@ class ApiConfig {
   static String lessonDetailUrl(int lessonId) => '$baseUrl/api/classroom/lesson/$lessonId';
   static String lessonDiscussionPostUrl(int lessonId) => '$baseUrl/api/classroom/lesson/$lessonId/discussion';
   static String lessonDiscussionLikeUrl(int discussionId) => '$baseUrl/api/classroom/lesson/discussion/$discussionId/like';
+  static String lessonDiscussionReactionsUrl(int discussionId) => '$baseUrl/api/classroom/lesson/discussion/$discussionId/reactions';
   static String lessonDiscussionCommentUrl(int discussionId) => '$baseUrl/api/classroom/lesson/discussion/$discussionId/comment';
   static String lessonDiscussionCommentLikeUrl(int commentId) => '$baseUrl/api/classroom/lesson/discussion/comment/$commentId/like';
+  static String lessonDiscussionCommentReactionsUrl(int commentId) => '$baseUrl/api/classroom/lesson/discussion/comment/$commentId/reactions';
   static String lessonDiscussionCommentReplyUrl(int commentId) => '$baseUrl/api/classroom/lesson/discussion/comment/$commentId/reply';
   static String lessonDiscussionReplyLikeUrl(int replyId) => '$baseUrl/api/classroom/lesson/discussion/reply/$replyId/like';
+  static String lessonDiscussionReplyReactionsUrl(int replyId) => '$baseUrl/api/classroom/lesson/discussion/reply/$replyId/reactions';
 
   static String lessonFileUrl(String path) {
     if (path.isEmpty) return '';

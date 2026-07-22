@@ -760,4 +760,37 @@ class ApiClient {
     }
     return body;
   }
+
+  Future<List<Map<String, dynamic>>> getLessonDiscussionReactions(int discussionId) async {
+    final res = await http
+        .get(Uri.parse(ApiConfig.lessonDiscussionReactionsUrl(discussionId)), headers: auth.authHeaders)
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to load reactions.');
+    }
+    return List<Map<String, dynamic>>.from(body['reactions'] ?? []);
+  }
+
+  Future<List<Map<String, dynamic>>> getLessonDiscussionCommentReactions(int commentId) async {
+    final res = await http
+        .get(Uri.parse(ApiConfig.lessonDiscussionCommentReactionsUrl(commentId)), headers: auth.authHeaders)
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to load reactions.');
+    }
+    return List<Map<String, dynamic>>.from(body['reactions'] ?? []);
+  }
+
+  Future<List<Map<String, dynamic>>> getLessonDiscussionReplyReactions(int replyId) async {
+    final res = await http
+        .get(Uri.parse(ApiConfig.lessonDiscussionReplyReactionsUrl(replyId)), headers: auth.authHeaders)
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to load reactions.');
+    }
+    return List<Map<String, dynamic>>.from(body['reactions'] ?? []);
+  }
 }
