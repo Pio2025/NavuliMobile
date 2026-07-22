@@ -13,8 +13,9 @@ import 'classroom_subjects_screen.dart';
 
 class ClassroomDetailScreen extends StatefulWidget {
   final int classId;
+  final bool readOnly;
 
-  const ClassroomDetailScreen({super.key, required this.classId});
+  const ClassroomDetailScreen({super.key, required this.classId, this.readOnly = false});
 
   @override
   State<ClassroomDetailScreen> createState() => _ClassroomDetailScreenState();
@@ -46,8 +47,8 @@ class _ClassroomDetailScreenState extends State<ClassroomDetailScreen> {
       final body = await _client.getClassroomDetail(widget.classId);
       setState(() {
         _classroom = Map<String, dynamic>.from(body['classroom'] ?? {});
-        _canEdit = body['canEdit'] == true;
-        _canDelete = body['canDelete'] == true;
+        _canEdit = !widget.readOnly && body['canEdit'] == true;
+        _canDelete = !widget.readOnly && body['canDelete'] == true;
         _loading = false;
       });
     } catch (e) {
@@ -104,11 +105,16 @@ class _ClassroomDetailScreenState extends State<ClassroomDetailScreen> {
     try {
       await _client.deleteClassroom(widget.classId);
       if (!mounted) return;
-      Navigator.of(context).pop(true);
+      Navigator.of(context).pop({'deleted': true});
     } catch (e) {
       if (!mounted) return;
       setState(() => _busy = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('$e', style: const TextStyle(color: Colors.white)),
+          backgroundColor: AppColors.danger,
+        ),
+      );
     }
   }
 
@@ -122,8 +128,12 @@ class _ClassroomDetailScreenState extends State<ClassroomDetailScreen> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text(_classroom?['name'] ?? 'Classroom'),
           actions: [
+            IconButton(
+              icon: const Icon(Icons.groups_outlined),
+              tooltip: 'Students',
+              onPressed: () => _openTab((id) => ClassroomStudentsScreen(classId: id)),
+            ),
             IconButton(
               icon: const Icon(Icons.menu_book_outlined),
               tooltip: 'Subjects',
@@ -133,11 +143,6 @@ class _ClassroomDetailScreenState extends State<ClassroomDetailScreen> {
               icon: const Icon(Icons.badge_outlined),
               tooltip: 'Staff',
               onPressed: () => _openTab((id) => ClassroomStaffScreen(classId: id)),
-            ),
-            IconButton(
-              icon: const Icon(Icons.groups_outlined),
-              tooltip: 'Students',
-              onPressed: () => _openTab((id) => ClassroomStudentsScreen(classId: id)),
             ),
           ],
         ),
@@ -361,6 +366,7 @@ class _ClassroomDetailScreenState extends State<ClassroomDetailScreen> {
               _statTile(Icons.layers_outlined, 'Level', '${c['levelName'] ?? '—'}'),
               _statTile(Icons.menu_book_outlined, 'Subjects', '${c['subjectCount'] ?? 0}'),
               _statTile(Icons.groups_outlined, 'Students', '${c['studentCount'] ?? 0}'),
+              _statTile(Icons.play_lesson_outlined, 'Lessons', '${c['lessonCount'] ?? 0}'),
             ],
           ),
           if ((c['createdAt'] ?? '').toString().isNotEmpty ||

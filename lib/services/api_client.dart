@@ -498,7 +498,10 @@ class ApiClient {
     if (res.statusCode != 200 || body['success'] != true) {
       throw Exception(body['message'] ?? 'Failed to load subjects.');
     }
-    return Map<String, dynamic>.from(body['subjects'] ?? {});
+    return {
+      ...Map<String, dynamic>.from(body['subjects'] ?? {}),
+      'canFullAccess': body['canFullAccess'] == true,
+    };
   }
 
   Future<Map<String, dynamic>> getClassroomStaff(int id) async {

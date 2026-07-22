@@ -56,8 +56,26 @@ class _ClassroomListingScreenState extends State<ClassroomListingScreen> {
   int _tableTotal = 0;
   bool _tableLoading = false;
 
+  int? _selectedYear;
+
   bool get _isAllScope => widget.scope == 'all';
   bool get _hasActiveAdmission => _permissions['hasActiveAdmission'] == true;
+  bool get _showYearTabs => widget.scope == 'mine' || widget.scope == 'child';
+
+  List<int> get _availableYears {
+    final years = _items
+        .map((c) => (c['year'] as num?)?.toInt())
+        .whereType<int>()
+        .toSet()
+        .toList();
+    years.sort((a, b) => b.compareTo(a));
+    return years;
+  }
+
+  List<Map<String, dynamic>> get _displayItems {
+    if (!_showYearTabs || _selectedYear == null) return _items;
+    return _items.where((c) => (c['year'] as num?)?.toInt() == _selectedYear).toList();
+  }
 
   @override
   void initState() {
@@ -96,6 +114,13 @@ class _ClassroomListingScreenState extends State<ClassroomListingScreen> {
         _schools = result.schools;
         _permissions = result.permissions;
         _loading = false;
+        if (_showYearTabs) {
+          final years = _availableYears;
+          final currentYear = DateTime.now().year;
+          _selectedYear = years.contains(currentYear)
+              ? currentYear
+              : (years.isNotEmpty ? years.first : null);
+        }
       });
       if (_viewMode == ClassroomViewMode.table) {
         await _loadTablePage(0);
@@ -152,8 +177,8 @@ class _ClassroomListingScreenState extends State<ClassroomListingScreen> {
         });
       } else {
         setState(() {
-          _tableTotal = _items.length;
-          _tableRows = _items.skip(offset).take(_tablePageSize).toList();
+          _tableTotal = _displayItems.length;
+          _tableRows = _displayItems.skip(offset).take(_tablePageSize).toList();
           _tableLoading = false;
         });
       }
@@ -249,12 +274,29 @@ class _ClassroomListingScreenState extends State<ClassroomListingScreen> {
   }
 
   Future<void> _openDetail(Map<String, dynamic> classroom) async {
-    final changed = await Navigator.of(context).push<bool>(
+    final isPastYear = _showYearTabs &&
+        _selectedYear != null &&
+        _selectedYear != DateTime.now().year;
+    final result = await Navigator.of(context).push<dynamic>(
       MaterialPageRoute(
-        builder: (_) => ClassroomDetailScreen(classId: (classroom['id'] as num).toInt()),
+        builder: (_) => ClassroomDetailScreen(
+          classId: (classroom['id'] as num).toInt(),
+          readOnly: isPastYear,
+        ),
       ),
     );
-    if (changed == true) _loadFirstPage();
+    if (result is Map && result['deleted'] == true) {
+      await _loadFirstPage();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Classroom deleted successfully.', style: TextStyle(color: Colors.white)),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    } else if (result == true) {
+      _loadFirstPage();
+    }
   }
 
   @override
@@ -265,11 +307,43 @@ class _ClassroomListingScreenState extends State<ClassroomListingScreen> {
         top: false,
         child: Column(
           children: [
+            if (_showYearTabs && _availableYears.isNotEmpty) _buildYearTabs(),
             _buildToolbar(),
             if (_showSearch && _isAllScope) _buildSearchBar(),
             Expanded(child: _buildBody()),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildYearTabs() {
+    final scheme = Theme.of(context).colorScheme;
+    final currentYear = DateTime.now().year;
+    return SizedBox(
+      height: 44,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        children: [
+          for (final year in _availableYears)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: ChoiceChip(
+                label: Text('$year${year != currentYear ? ' (past)' : ''}'),
+                selected: _selectedYear == year,
+                selectedColor: AppColors.primary.withValues(alpha: 0.15),
+                labelStyle: TextStyle(
+                  color: _selectedYear == year ? AppColors.primary : scheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+                onSelected: (_) {
+                  setState(() => _selectedYear = year);
+                  if (_viewMode == ClassroomViewMode.table) _loadTablePage(0);
+                },
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -361,7 +435,8 @@ class _ClassroomListingScreenState extends State<ClassroomListingScreen> {
   }
 
   Widget _buildGrid() {
-    if (_items.isEmpty) {
+    final items = _displayItems;
+    if (items.isEmpty) {
       return RefreshIndicator(
         onRefresh: _loadFirstPage,
         child: ListView(
@@ -387,12 +462,12 @@ class _ClassroomListingScreenState extends State<ClassroomListingScreen> {
             crossAxisSpacing: 12,
             childAspectRatio: 0.95,
           ),
-          itemCount: _items.length + (_loadingMore ? 1 : 0),
+          itemCount: items.length + (_loadingMore ? 1 : 0),
           itemBuilder: (context, i) {
-            if (i >= _items.length) {
+            if (i >= items.length) {
               return const Center(child: CircularProgressIndicator());
             }
-            final c = _items[i];
+            final c = items[i];
             return ClassroomCard(classroom: c, dense: true, onTap: () => _openDetail(c));
           },
         ),
@@ -401,7 +476,8 @@ class _ClassroomListingScreenState extends State<ClassroomListingScreen> {
   }
 
   Widget _buildList() {
-    if (_items.isEmpty) {
+    final items = _displayItems;
+    if (items.isEmpty) {
       return RefreshIndicator(
         onRefresh: _loadFirstPage,
         child: ListView(
@@ -421,15 +497,15 @@ class _ClassroomListingScreenState extends State<ClassroomListingScreen> {
         },
         child: ListView.builder(
           padding: const EdgeInsets.fromLTRB(12, 4, 12, 16),
-          itemCount: _items.length + (_loadingMore ? 1 : 0),
+          itemCount: items.length + (_loadingMore ? 1 : 0),
           itemBuilder: (context, i) {
-            if (i >= _items.length) {
+            if (i >= items.length) {
               return const Padding(
                 padding: EdgeInsets.symmetric(vertical: 16),
                 child: Center(child: CircularProgressIndicator()),
               );
             }
-            final c = _items[i];
+            final c = items[i];
             return Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: ClassroomCard(classroom: c, onTap: () => _openDetail(c)),

@@ -67,6 +67,31 @@ class _ClassroomStudentsScreenState extends State<ClassroomStudentsScreen> {
     }
   }
 
+  Widget _statusBadge(String status) {
+    final Color color;
+    switch (status.toLowerCase()) {
+      case 'active':
+        color = AppColors.success;
+        break;
+      case 'inactive':
+        color = AppColors.danger;
+        break;
+      default:
+        color = const Color(0xFF9A9AB2);
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        status,
+        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -136,9 +161,7 @@ class _ClassroomStudentsScreenState extends State<ClassroomStudentsScreen> {
                                             style: const TextStyle(
                                                 fontWeight: FontWeight.w600, fontSize: 14)),
                                       ),
-                                      Text('${s['status'] ?? ''}',
-                                          style: TextStyle(
-                                              fontSize: 12, color: scheme.onSurfaceVariant)),
+                                      _statusBadge('${s['status'] ?? ''}'),
                                     ],
                                   ),
                                 ),

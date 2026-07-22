@@ -5,6 +5,7 @@ import '../config/api_config.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
+import 'subject_detail_screen.dart';
 
 class ClassroomSubjectsScreen extends StatefulWidget {
   final int classId;
@@ -21,6 +22,7 @@ class _ClassroomSubjectsScreenState extends State<ClassroomSubjectsScreen> {
   String? _error;
   List<Map<String, dynamic>> _core = [];
   Map<String, List<Map<String, dynamic>>> _optional = {};
+  bool _canFullAccess = false;
 
   @override
   void initState() {
@@ -46,6 +48,7 @@ class _ClassroomSubjectsScreenState extends State<ClassroomSubjectsScreen> {
       setState(() {
         _core = core;
         _optional = optional;
+        _canFullAccess = subjects['canFullAccess'] == true;
         _loading = false;
       });
     } catch (e) {
@@ -60,40 +63,53 @@ class _ClassroomSubjectsScreenState extends State<ClassroomSubjectsScreen> {
     final scheme = Theme.of(context).colorScheme;
     final teacherName = s['teacher_name'] as String?;
     final photo = s['teacher_photo'] as String?;
+    final tile = Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardTheme.color ?? scheme.surface,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              '${s['subject_name'] ?? ''}',
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+            ),
+          ),
+          CircleAvatar(
+            radius: 12,
+            backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+            backgroundImage: (photo != null && photo.isNotEmpty)
+                ? NetworkImage(ApiConfig.photoUrl(photo))
+                : null,
+            child: (photo == null || photo.isEmpty)
+                ? const Icon(Icons.person, size: 13, color: AppColors.primary)
+                : null,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            teacherName != null && teacherName.isNotEmpty ? teacherName : 'Not assigned',
+            style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+          ),
+          if (_canFullAccess) ...[
+            const SizedBox(width: 4),
+            Icon(Icons.chevron_right, size: 18, color: scheme.onSurfaceVariant),
+          ],
+        ],
+      ),
+    );
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardTheme.color ?? scheme.surface,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                '${s['subject_name'] ?? ''}',
-                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+      child: _canFullAccess
+          ? InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => SubjectDetailScreen(subject: s)),
               ),
-            ),
-            CircleAvatar(
-              radius: 12,
-              backgroundColor: AppColors.primary.withValues(alpha: 0.15),
-              backgroundImage: (photo != null && photo.isNotEmpty)
-                  ? NetworkImage(ApiConfig.photoUrl(photo))
-                  : null,
-              child: (photo == null || photo.isEmpty)
-                  ? const Icon(Icons.person, size: 13, color: AppColors.primary)
-                  : null,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              teacherName != null && teacherName.isNotEmpty ? teacherName : 'Not assigned',
-              style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
-            ),
-          ],
-        ),
-      ),
+              child: tile,
+            )
+          : tile,
     );
   }
 
