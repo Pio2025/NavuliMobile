@@ -536,4 +536,37 @@ class ApiClient {
       hasMore: body['hasMore'] == true,
     );
   }
+
+  Future<Map<String, dynamic>> getClassroomAttendance(int id) async {
+    final res = await http
+        .get(Uri.parse(ApiConfig.classroomAttendanceUrl(id)), headers: auth.authHeaders)
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to load attendance.');
+    }
+    return body;
+  }
+
+  Future<Map<String, dynamic>> getClassroomExam(int id) async {
+    final res = await http
+        .get(Uri.parse(ApiConfig.classroomExamUrl(id)), headers: auth.authHeaders)
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to load exam results.');
+    }
+    return body;
+  }
+
+  Future<Map<String, dynamic>> getClassroomDiscussion(int id) async {
+    final res = await http
+        .get(Uri.parse(ApiConfig.classroomDiscussionUrl(id)), headers: auth.authHeaders)
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to load discussion.');
+    }
+    return body;
+  }
 }

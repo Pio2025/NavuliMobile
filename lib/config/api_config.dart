@@ -16,6 +16,9 @@ class ApiConfig {
   static String classroomSubjectsUrl(int id) => '$baseUrl/api/classroom/$id/subjects';
   static String classroomStaffUrl(int id) => '$baseUrl/api/classroom/$id/staff';
   static String classroomStudentsUrl(int id) => '$baseUrl/api/classroom/$id/students';
+  static String classroomAttendanceUrl(int id) => '$baseUrl/api/classroom/$id/attendance';
+  static String classroomExamUrl(int id) => '$baseUrl/api/classroom/$id/exam';
+  static String classroomDiscussionUrl(int id) => '$baseUrl/api/classroom/$id/discussion';
 
   static const String wallFeedUrl = '$baseUrl/api/wall/feed';
   static const String wallPostUrl = '$baseUrl/api/wall/post';
@@ -32,6 +35,14 @@ class ApiConfig {
       return photo;
     }
     return '$baseUrl/uploads/profilePhoto/$photo';
+  }
+
+  static String discussionPhotoUrl(String photo) {
+    if (photo.isEmpty) return '';
+    if (photo.startsWith('http://') || photo.startsWith('https://')) {
+      return photo;
+    }
+    return '$baseUrl/uploads/class_discussion/$photo';
   }
 
   static String schoolLogoUrl(String logo) {

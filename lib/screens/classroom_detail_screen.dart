@@ -6,8 +6,10 @@ import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/time_ago.dart';
+import 'classroom_attendance_screen.dart';
+import 'classroom_discussion_screen.dart';
+import 'classroom_exam_screen.dart';
 import 'classroom_form_screen.dart';
-import 'classroom_staff_screen.dart';
 import 'classroom_students_screen.dart';
 import 'classroom_subjects_screen.dart';
 
@@ -27,6 +29,7 @@ class _ClassroomDetailScreenState extends State<ClassroomDetailScreen> {
   bool _busy = false;
   String? _error;
   Map<String, dynamic>? _classroom;
+  Map<String, dynamic> _staff = {};
   bool _canEdit = false;
   bool _canDelete = false;
   bool _changed = false;
@@ -44,9 +47,14 @@ class _ClassroomDetailScreenState extends State<ClassroomDetailScreen> {
       _error = null;
     });
     try {
-      final body = await _client.getClassroomDetail(widget.classId);
+      final results = await Future.wait([
+        _client.getClassroomDetail(widget.classId),
+        _client.getClassroomStaff(widget.classId),
+      ]);
+      final body = results[0];
       setState(() {
         _classroom = Map<String, dynamic>.from(body['classroom'] ?? {});
+        _staff = results[1];
         _canEdit = !widget.readOnly && body['canEdit'] == true;
         _canDelete = !widget.readOnly && body['canDelete'] == true;
         _loading = false;
@@ -140,9 +148,19 @@ class _ClassroomDetailScreenState extends State<ClassroomDetailScreen> {
               onPressed: () => _openTab((id) => ClassroomSubjectsScreen(classId: id)),
             ),
             IconButton(
-              icon: const Icon(Icons.badge_outlined),
-              tooltip: 'Staff',
-              onPressed: () => _openTab((id) => ClassroomStaffScreen(classId: id)),
+              icon: const Icon(Icons.event_available_outlined),
+              tooltip: 'Attendance',
+              onPressed: () => _openTab((id) => ClassroomAttendanceScreen(classId: id)),
+            ),
+            IconButton(
+              icon: const Icon(Icons.fact_check_outlined),
+              tooltip: 'Exam',
+              onPressed: () => _openTab((id) => ClassroomExamScreen(classId: id)),
+            ),
+            IconButton(
+              icon: const Icon(Icons.forum_outlined),
+              tooltip: 'Discussion',
+              onPressed: () => _openTab((id) => ClassroomDiscussionScreen(classId: id)),
             ),
           ],
         ),
@@ -213,12 +231,46 @@ class _ClassroomDetailScreenState extends State<ClassroomDetailScreen> {
     );
   }
 
+  Widget _staffRoleTile(String role, String label) {
+    final scheme = Theme.of(context).colorScheme;
+    final entry = _staff[role] is Map ? Map<String, dynamic>.from(_staff[role]) : null;
+    final name = entry != null ? '${entry['name'] ?? ''}' : '';
+    final photo = entry != null ? '${entry['photo'] ?? ''}' : '';
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 20,
+            backgroundImage: photo.isNotEmpty ? NetworkImage(ApiConfig.photoUrl(photo)) : null,
+            child: photo.isEmpty ? const Icon(Icons.person, color: Colors.white, size: 18) : null,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
+                Text(
+                  name.isNotEmpty ? name : 'Not assigned',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: name.isNotEmpty ? null : scheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildOverview() {
     final c = _classroom ?? {};
     final scheme = Theme.of(context).colorScheme;
     final schoolLogo = '${c['schoolLogo'] ?? ''}';
-    final classTeacher = '${c['classTeacher'] ?? ''}';
-    final classTeacherPhoto = '${c['classTeacherPhoto'] ?? ''}';
 
     return Container(
       decoration: BoxDecoration(
@@ -329,34 +381,16 @@ class _ClassroomDetailScreenState extends State<ClassroomDetailScreen> {
               ],
             ),
           ),
-          if (classTeacher.isNotEmpty) ...[
+          if (_staff.isNotEmpty) ...[
             const SizedBox(height: 18),
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 22,
-                  backgroundImage:
-                      classTeacherPhoto.isNotEmpty ? NetworkImage(ApiConfig.photoUrl(classTeacherPhoto)) : null,
-                  child: classTeacherPhoto.isEmpty
-                      ? const Icon(Icons.person, color: Colors.white)
-                      : null,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Class Teacher',
-                          style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
-                      Text(classTeacher,
-                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+            const Divider(height: 1),
+            const SizedBox(height: 14),
+            _staffRoleTile('Class Teacher', 'Class Teacher'),
+            _staffRoleTile('Assistant Class Teacher', 'Assistant Class Teacher'),
+            _staffRoleTile('Class Captain', 'Class Captain'),
+            _staffRoleTile('Assistant Class Captain', 'Assistant Class Captain'),
           ],
-          const SizedBox(height: 18),
+          const SizedBox(height: 4),
           Wrap(
             spacing: 10,
             runSpacing: 10,
