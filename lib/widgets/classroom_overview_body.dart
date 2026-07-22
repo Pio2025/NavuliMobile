@@ -61,6 +61,15 @@ class ClassroomOverviewBody extends StatelessWidget {
     );
   }
 
+  static const _staffRoles = ['Class Teacher', 'Assistant Class Teacher', 'Class Captain', 'Assistant Class Captain'];
+
+  bool _isRoleAssigned(String role) {
+    final entry = staff[role] is Map ? Map<String, dynamic>.from(staff[role]) : null;
+    return entry != null && '${entry['name'] ?? ''}'.isNotEmpty;
+  }
+
+  List<String> get _assignedRoles => _staffRoles.where(_isRoleAssigned).toList();
+
   Widget _staffRoleTile(BuildContext context, String role, String label) {
     final scheme = Theme.of(context).colorScheme;
     final entry = staff[role] is Map ? Map<String, dynamic>.from(staff[role]) : null;
@@ -212,14 +221,11 @@ class ClassroomOverviewBody extends StatelessWidget {
               ],
             ),
           ),
-          if (staff.isNotEmpty) ...[
+          if (_assignedRoles.isNotEmpty) ...[
             const SizedBox(height: 18),
             const Divider(height: 1),
             const SizedBox(height: 14),
-            _staffRoleTile(context, 'Class Teacher', 'Class Teacher'),
-            _staffRoleTile(context, 'Assistant Class Teacher', 'Assistant Class Teacher'),
-            _staffRoleTile(context, 'Class Captain', 'Class Captain'),
-            _staffRoleTile(context, 'Assistant Class Captain', 'Assistant Class Captain'),
+            for (final role in _assignedRoles) _staffRoleTile(context, role, role),
           ],
           const SizedBox(height: 4),
           Wrap(
