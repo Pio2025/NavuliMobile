@@ -6,7 +6,7 @@ import '../config/api_config.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
-import '../widgets/lesson_discussion_section.dart';
+import 'lesson_discussion_section.dart';
 
 class _FileTypeStyle {
   final IconData icon;
@@ -69,17 +69,20 @@ Future<void> _openUrl(BuildContext context, String url) async {
   }
 }
 
-class LessonDetailScreen extends StatefulWidget {
+/// Renders a lesson's full detail inline: info card, horizontal Files/Videos/
+/// Referrals/Assessments cards, and the interactive Lesson Discussion section.
+/// Used directly inside the day-view screen (no separate navigation needed).
+class LessonDetailContent extends StatefulWidget {
   final int lessonId;
   final String? classroomName;
 
-  const LessonDetailScreen({super.key, required this.lessonId, this.classroomName});
+  const LessonDetailContent({super.key, required this.lessonId, this.classroomName});
 
   @override
-  State<LessonDetailScreen> createState() => _LessonDetailScreenState();
+  State<LessonDetailContent> createState() => _LessonDetailContentState();
 }
 
-class _LessonDetailScreenState extends State<LessonDetailScreen> {
+class _LessonDetailContentState extends State<LessonDetailContent> {
   late ApiClient _client;
   bool _loading = true;
   String? _error;
@@ -122,11 +125,6 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
   }
 
   Widget _infoCard(ColorScheme scheme) {
-    final parts = <String>[
-      if ((widget.classroomName ?? '').isNotEmpty) widget.classroomName!,
-      '${_lesson['subjectName'] ?? ''}',
-      if (_lesson['week'] != null) 'Week ${_lesson['week']}',
-    ];
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -137,14 +135,9 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            parts.where((p) => p.isNotEmpty).join(' · '),
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: scheme.onSurfaceVariant),
-          ),
-          const SizedBox(height: 4),
-          Text('${_lesson['title'] ?? ''}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+          Text('${_lesson['title'] ?? ''}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
           if ((_lesson['desc'] ?? '').toString().isNotEmpty) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Text('${_lesson['desc']}', style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant)),
           ],
           const SizedBox(height: 10),
@@ -384,34 +377,33 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Scaffold(
-      appBar: AppBar(title: const Text('Lesson')),
-      body: SafeArea(
-        top: false,
-        child: _loading
-            ? const Center(child: CircularProgressIndicator())
-            : _error != null
-                ? Center(child: Text('Failed to load lesson: $_error'))
-                : RefreshIndicator(
-                    onRefresh: _load,
-                    child: ListView(
-                      padding: const EdgeInsets.all(16),
-                      children: [
-                        _infoCard(scheme),
-                        _horizontalSection(scheme, 'Lesson Files', _files, (f) => _fileTile(scheme, f)),
-                        _horizontalSection(scheme, 'Lesson Videos', _videos, (v) => _videoTile(scheme, v)),
-                        _horizontalSection(scheme, 'Lesson Referrals', _links, (l) => _linkTile(scheme, l)),
-                        _horizontalSection(scheme, 'Assessments', _assessments, (a) => _assessmentTile(scheme, a)),
-                        const SizedBox(height: 14),
-                        LessonDiscussionSection(
-                          client: _client,
-                          lessonId: widget.lessonId,
-                          initialDiscussions: _discussion,
-                        ),
-                      ],
-                    ),
-                  ),
-      ),
+    if (_loading) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 40),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (_error != null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        child: Center(child: Text('Failed to load lesson: $_error')),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _infoCard(scheme),
+        _horizontalSection(scheme, 'Lesson Files', _files, (f) => _fileTile(scheme, f)),
+        _horizontalSection(scheme, 'Lesson Videos', _videos, (v) => _videoTile(scheme, v)),
+        _horizontalSection(scheme, 'Lesson Referrals', _links, (l) => _linkTile(scheme, l)),
+        _horizontalSection(scheme, 'Assessments', _assessments, (a) => _assessmentTile(scheme, a)),
+        const SizedBox(height: 14),
+        LessonDiscussionSection(
+          client: _client,
+          lessonId: widget.lessonId,
+          initialDiscussions: _discussion,
+        ),
+      ],
     );
   }
 }

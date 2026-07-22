@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
-import 'lesson_detail_screen.dart';
+import '../widgets/lesson_detail_content.dart';
 
 const _monthNames = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -68,70 +68,17 @@ class LessonDayViewScreen extends StatelessWidget {
     );
   }
 
-  Widget _countChip(BuildContext context, IconData icon, int count, String label) {
-    if (count == 0) return const SizedBox.shrink();
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      margin: const EdgeInsets.only(right: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 13, color: scheme.onSurfaceVariant),
-          const SizedBox(width: 4),
-          Text('$count $label', style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
-        ],
-      ),
-    );
-  }
-
-  Widget _lessonTile(BuildContext context, Map<String, dynamic> l) {
-    final scheme = Theme.of(context).colorScheme;
-    final fileCount = (l['fileCount'] as num?)?.toInt() ?? 0;
-    final videoCount = (l['videoCount'] as num?)?.toInt() ?? 0;
-    final linkCount = (l['linkCount'] as num?)?.toInt() ?? 0;
-    final assessmentCount = (l['assessmentCount'] as num?)?.toInt() ?? 0;
+  Widget _lessonBlock(BuildContext context, Map<String, dynamic> l, bool showDivider) {
     final lessonId = (l['lessonId'] as num?)?.toInt();
-    return InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: lessonId == null
-          ? null
-          : () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => LessonDetailScreen(lessonId: lessonId, classroomName: classroomName),
-                ),
-              ),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardTheme.color ?? scheme.surface,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('${l['title'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-            if ((l['desc'] ?? '').toString().isNotEmpty) ...[
-              const SizedBox(height: 4),
-              Text('${l['desc']}',
-                  style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant)),
-            ],
-            const SizedBox(height: 8),
-            Wrap(
-              children: [
-                _countChip(context, Icons.attach_file, fileCount, 'file${fileCount == 1 ? '' : 's'}'),
-                _countChip(context, Icons.videocam_outlined, videoCount, 'video${videoCount == 1 ? '' : 's'}'),
-                _countChip(context, Icons.link, linkCount, 'link${linkCount == 1 ? '' : 's'}'),
-                _countChip(context, Icons.quiz_outlined, assessmentCount, 'assessment${assessmentCount == 1 ? '' : 's'}'),
-              ],
-            ),
-          ],
-        ),
+    if (lessonId == null) return const SizedBox.shrink();
+    return Padding(
+      padding: EdgeInsets.only(bottom: showDivider ? 20 : 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LessonDetailContent(lessonId: lessonId, classroomName: classroomName),
+          if (showDivider) const Padding(padding: EdgeInsets.only(top: 20), child: Divider(height: 1)),
+        ],
       ),
     );
   }
@@ -166,7 +113,9 @@ class LessonDayViewScreen extends StatelessWidget {
     }
     return ListView(
       padding: const EdgeInsets.all(16),
-      children: [for (final l in lessons) _lessonTile(context, l)],
+      children: [
+        for (int i = 0; i < lessons.length; i++) _lessonBlock(context, lessons[i], i < lessons.length - 1),
+      ],
     );
   }
 
