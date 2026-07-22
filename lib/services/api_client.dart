@@ -28,6 +28,14 @@ typedef SchoolScopedList = ({
   Map<String, dynamic> permissions,
 });
 
+typedef ClassroomScopedList = ({
+  List<Map<String, dynamic>> items,
+  int total,
+  bool hasMore,
+  List<Map<String, dynamic>> schools,
+  Map<String, dynamic> permissions,
+});
+
 class ApiClient {
   final AuthService auth;
 
@@ -354,5 +362,139 @@ class ApiClient {
     if (res.statusCode != 200 || body['success'] != true) {
       throw Exception(body['message'] ?? 'Failed to mark notifications read.');
     }
+  }
+
+  Future<ClassroomScopedList> getClassrooms({
+    String scope = 'all',
+    int? childId,
+    String? search,
+    String? status,
+    int? schId,
+    int limit = 10,
+    int offset = 0,
+  }) async {
+    final uri = Uri.parse(ApiConfig.classroomListUrl).replace(
+      queryParameters: {
+        'scope': scope,
+        'limit': '$limit',
+        'offset': '$offset',
+        if (childId != null) 'childId': '$childId',
+        if (search != null && search.isNotEmpty) 'search': search,
+        if (status != null && status.isNotEmpty) 'status': status,
+        if (schId != null) 'sch_id': '$schId',
+      },
+    );
+    final res = await http
+        .get(uri, headers: auth.authHeaders)
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to load classrooms.');
+    }
+    return (
+      items: List<Map<String, dynamic>>.from(body['classrooms'] ?? []),
+      total: (body['total'] as num? ?? 0).toInt(),
+      hasMore: body['hasMore'] == true,
+      schools: List<Map<String, dynamic>>.from(body['schools'] ?? []),
+      permissions: Map<String, dynamic>.from(body['permissions'] ?? {}),
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> getClassroomStreams({int? schId}) async {
+    final uri = Uri.parse(ApiConfig.classroomStreamsUrl).replace(
+      queryParameters: {
+        if (schId != null) 'sch_id': '$schId',
+      },
+    );
+    final res = await http
+        .get(uri, headers: auth.authHeaders)
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to load streams.');
+    }
+    return List<Map<String, dynamic>>.from(body['streams'] ?? []);
+  }
+
+  Future<Map<String, dynamic>> createClassroom({
+    required int streamId,
+    required String className,
+    required int classYear,
+    String classStatus = 'Active',
+    int? schId,
+  }) async {
+    final res = await http
+        .post(
+          Uri.parse(ApiConfig.classroomListUrl),
+          headers: {...auth.authHeaders, 'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'stream_id': streamId,
+            'class_name': className,
+            'class_year': classYear,
+            'class_status': classStatus,
+            if (schId != null) 'sch_id': schId,
+          }),
+        )
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to create classroom.');
+    }
+    return Map<String, dynamic>.from(body['classroom']);
+  }
+
+  Future<Map<String, dynamic>> getClassroomDetail(int id) async {
+    final res = await http
+        .get(Uri.parse(ApiConfig.classroomUrl(id)), headers: auth.authHeaders)
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to load classroom.');
+    }
+    return body;
+  }
+
+  Future<Map<String, dynamic>> getClassroomSubjects(int id) async {
+    final res = await http
+        .get(Uri.parse(ApiConfig.classroomSubjectsUrl(id)), headers: auth.authHeaders)
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to load subjects.');
+    }
+    return Map<String, dynamic>.from(body['subjects'] ?? {});
+  }
+
+  Future<Map<String, dynamic>> getClassroomStaff(int id) async {
+    final res = await http
+        .get(Uri.parse(ApiConfig.classroomStaffUrl(id)), headers: auth.authHeaders)
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to load staff.');
+    }
+    return Map<String, dynamic>.from(body['staff'] ?? {});
+  }
+
+  Future<({List<Map<String, dynamic>> items, int total, bool hasMore})> getClassroomStudents(
+    int id, {
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    final uri = Uri.parse(ApiConfig.classroomStudentsUrl(id)).replace(
+      queryParameters: {'limit': '$limit', 'offset': '$offset'},
+    );
+    final res = await http
+        .get(uri, headers: auth.authHeaders)
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to load students.');
+    }
+    return (
+      items: List<Map<String, dynamic>>.from(body['students'] ?? []),
+      total: (body['total'] as num? ?? 0).toInt(),
+      hasMore: body['hasMore'] == true,
+    );
   }
 }

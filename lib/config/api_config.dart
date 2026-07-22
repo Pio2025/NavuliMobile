@@ -10,6 +10,13 @@ class ApiConfig {
   static String announcementUrl(int id) => '$baseUrl/api/announcements/$id';
   static const String dashboardUrl = '$baseUrl/api/dashboard';
 
+  static const String classroomListUrl = '$baseUrl/api/classroom';
+  static const String classroomStreamsUrl = '$baseUrl/api/classroom/streams';
+  static String classroomUrl(int id) => '$baseUrl/api/classroom/$id';
+  static String classroomSubjectsUrl(int id) => '$baseUrl/api/classroom/$id/subjects';
+  static String classroomStaffUrl(int id) => '$baseUrl/api/classroom/$id/staff';
+  static String classroomStudentsUrl(int id) => '$baseUrl/api/classroom/$id/students';
+
   static const String wallFeedUrl = '$baseUrl/api/wall/feed';
   static const String wallPostUrl = '$baseUrl/api/wall/post';
   static String wallCommentsUrl(int postId) => '$baseUrl/api/wall/post/$postId/comments';

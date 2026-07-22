@@ -5,6 +5,7 @@ import '../config/api_config.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
+import 'classroom_screen.dart';
 import 'home_screen.dart';
 import 'menu_screen.dart';
 import 'notification_screen.dart';
@@ -44,7 +45,7 @@ class _MainShellState extends State<MainShell> {
 
     final screens = [
       const HomeScreen(),
-      const PlaceholderScreen(title: 'Classroom', icon: Icons.class_outlined),
+      const ClassroomScreen(),
       const PlaceholderScreen(title: 'Intake', icon: Icons.how_to_reg_outlined),
       const WallScreen(),
       NotificationScreen(
@@ -64,7 +65,9 @@ class _MainShellState extends State<MainShell> {
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: _index,
-        showUnselectedLabels: true,
+        showSelectedLabels: false,
+        showUnselectedLabels: false,
+        iconSize: 28,
         onTap: (i) => setState(() => _index = i),
         items: [
           const BottomNavigationBarItem(
