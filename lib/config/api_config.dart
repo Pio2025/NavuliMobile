@@ -28,6 +28,26 @@ class ApiConfig {
   static String subjectAssignmentsUrl(int classSubId) => '$baseUrl/api/classroom/subject/$classSubId/assignments';
   static String subjectFeedbackUrl(int classSubId) => '$baseUrl/api/classroom/subject/$classSubId/feedback';
 
+  static String lessonDetailUrl(int lessonId) => '$baseUrl/api/classroom/lesson/$lessonId';
+  static String lessonDiscussionPostUrl(int lessonId) => '$baseUrl/api/classroom/lesson/$lessonId/discussion';
+  static String lessonDiscussionLikeUrl(int discussionId) => '$baseUrl/api/classroom/lesson/discussion/$discussionId/like';
+  static String lessonDiscussionCommentUrl(int discussionId) => '$baseUrl/api/classroom/lesson/discussion/$discussionId/comment';
+  static String lessonDiscussionCommentLikeUrl(int commentId) => '$baseUrl/api/classroom/lesson/discussion/comment/$commentId/like';
+  static String lessonDiscussionCommentReplyUrl(int commentId) => '$baseUrl/api/classroom/lesson/discussion/comment/$commentId/reply';
+  static String lessonDiscussionReplyLikeUrl(int replyId) => '$baseUrl/api/classroom/lesson/discussion/reply/$replyId/like';
+
+  static String lessonFileUrl(String path) {
+    if (path.isEmpty) return '';
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    return '$baseUrl/uploads/lesson_files/$path';
+  }
+
+  static String lessonDiscussionPhotoUrl(String photo) {
+    if (photo.isEmpty) return '';
+    if (photo.startsWith('http://') || photo.startsWith('https://')) return photo;
+    return '$baseUrl/uploads/lesson_discussion/$photo';
+  }
+
   static const String wallFeedUrl = '$baseUrl/api/wall/feed';
   static const String wallPostUrl = '$baseUrl/api/wall/post';
   static String wallCommentsUrl(int postId) => '$baseUrl/api/wall/post/$postId/comments';

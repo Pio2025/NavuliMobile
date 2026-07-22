@@ -654,4 +654,110 @@ class ApiClient {
     }
     return body;
   }
+
+  Future<Map<String, dynamic>> getLessonDetail(int lessonId) async {
+    final res = await http
+        .get(Uri.parse(ApiConfig.lessonDetailUrl(lessonId)), headers: auth.authHeaders)
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to load lesson.');
+    }
+    return body;
+  }
+
+  Future<Map<String, dynamic>> postLessonDiscussion(
+    int lessonId, {
+    String message = '',
+    List<http.MultipartFile>? photos,
+  }) async {
+    final request = http.MultipartRequest('POST', Uri.parse(ApiConfig.lessonDiscussionPostUrl(lessonId)))
+      ..headers.addAll(auth.authHeaders)
+      ..fields['message'] = message;
+    if (photos != null) {
+      request.files.addAll(photos);
+    }
+    final streamed = await request.send().timeout(const Duration(seconds: 60));
+    final res = await http.Response.fromStream(streamed);
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to post.');
+    }
+    return Map<String, dynamic>.from(body['post']);
+  }
+
+  Future<Map<String, dynamic>> likeLessonDiscussion(int discussionId, {String type = 'like'}) async {
+    final res = await http
+        .post(
+          Uri.parse(ApiConfig.lessonDiscussionLikeUrl(discussionId)),
+          headers: {...auth.authHeaders, 'Content-Type': 'application/json'},
+          body: jsonEncode({'type': type}),
+        )
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to react.');
+    }
+    return body;
+  }
+
+  Future<Map<String, dynamic>> commentLessonDiscussion(int discussionId, String comment) async {
+    final res = await http
+        .post(
+          Uri.parse(ApiConfig.lessonDiscussionCommentUrl(discussionId)),
+          headers: {...auth.authHeaders, 'Content-Type': 'application/json'},
+          body: jsonEncode({'comment': comment}),
+        )
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to add comment.');
+    }
+    return Map<String, dynamic>.from(body['comment']);
+  }
+
+  Future<Map<String, dynamic>> likeLessonDiscussionComment(int commentId, {String type = 'like'}) async {
+    final res = await http
+        .post(
+          Uri.parse(ApiConfig.lessonDiscussionCommentLikeUrl(commentId)),
+          headers: {...auth.authHeaders, 'Content-Type': 'application/json'},
+          body: jsonEncode({'type': type}),
+        )
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to react.');
+    }
+    return body;
+  }
+
+  Future<Map<String, dynamic>> replyLessonDiscussionComment(int commentId, String reply) async {
+    final res = await http
+        .post(
+          Uri.parse(ApiConfig.lessonDiscussionCommentReplyUrl(commentId)),
+          headers: {...auth.authHeaders, 'Content-Type': 'application/json'},
+          body: jsonEncode({'reply': reply}),
+        )
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to add reply.');
+    }
+    return Map<String, dynamic>.from(body['reply']);
+  }
+
+  Future<Map<String, dynamic>> likeLessonDiscussionReply(int replyId, {String type = 'like'}) async {
+    final res = await http
+        .post(
+          Uri.parse(ApiConfig.lessonDiscussionReplyLikeUrl(replyId)),
+          headers: {...auth.authHeaders, 'Content-Type': 'application/json'},
+          body: jsonEncode({'type': type}),
+        )
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to react.');
+    }
+    return body;
+  }
 }
