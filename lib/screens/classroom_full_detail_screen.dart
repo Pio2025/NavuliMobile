@@ -156,7 +156,12 @@ class _ClassroomFullDetailScreenState extends State<ClassroomFullDetailScreen> {
               icon: const Icon(Icons.menu_book_outlined),
               tooltip: 'Subjects',
               onPressed: () => _openTab(
-                (id) => ClassroomSubjectsScreen(classId: id, childId: widget.childId),
+                (id) => ClassroomSubjectsScreen(
+                  classId: id,
+                  childId: widget.childId,
+                  classroomName: _classroom?['name'] as String?,
+                  interactive: true,
+                ),
               ),
             ),
             IconButton(

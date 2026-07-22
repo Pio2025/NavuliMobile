@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
+import 'lesson_day_view_screen.dart';
 
 // ── shared navigation bits ─────────────────────────────────────────────────
 
@@ -14,33 +15,84 @@ num _asNum(dynamic v) => (v is num) ? v : (num.tryParse('$v') ?? 0);
 
 int _classSubIdOf(Map<String, dynamic> subject) => _asNum(subject['class_sub_id']).toInt();
 
-void _switchSection(BuildContext context, Map<String, dynamic> subject, _Section target) {
+void _switchSection(BuildContext context, Map<String, dynamic> subject, _Section target, {String? classroomName}) {
   Widget screen;
   switch (target) {
     case _Section.dashboard:
-      screen = SubjectDashboardScreen(subject: subject);
+      screen = SubjectDashboardScreen(subject: subject, classroomName: classroomName);
       break;
     case _Section.lessons:
-      screen = SubjectLessonsScreen(subject: subject);
+      screen = SubjectLessonsScreen(subject: subject, classroomName: classroomName);
       break;
     case _Section.assignments:
-      screen = SubjectAssignmentsScreen(subject: subject);
+      screen = SubjectAssignmentsScreen(subject: subject, classroomName: classroomName);
       break;
     case _Section.feedback:
-      screen = SubjectFeedbackScreen(subject: subject);
+      screen = SubjectFeedbackScreen(subject: subject, classroomName: classroomName);
       break;
   }
   Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => screen));
 }
 
-List<Widget> _sectionActions(BuildContext context, Map<String, dynamic> subject, _Section current) {
+String _sectionLabel(_Section s) {
+  switch (s) {
+    case _Section.dashboard:
+      return 'Dashboard';
+    case _Section.lessons:
+      return 'Lessons';
+    case _Section.assignments:
+      return 'Assignments';
+    case _Section.feedback:
+      return 'Feedback';
+  }
+}
+
+Widget _sectionBanner(
+  BuildContext context, {
+  required String? classroomName,
+  required Map<String, dynamic> subject,
+  required _Section section,
+}) {
+  final scheme = Theme.of(context).colorScheme;
+  final subjectName = '${subject['subject_name'] ?? 'Subject'}';
+  final parts = [if ((classroomName ?? '').isNotEmpty) classroomName!, subjectName];
+  return Container(
+    width: double.infinity,
+    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+    decoration: BoxDecoration(
+      color: scheme.surfaceContainerHighest.withValues(alpha: 0.35),
+      border: Border(bottom: BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.3))),
+    ),
+    child: Row(
+      children: [
+        Expanded(
+          child: Text(
+            parts.join(' · '),
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: scheme.onSurfaceVariant),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)),
+          child: Text(_sectionLabel(section),
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.primary)),
+        ),
+      ],
+    ),
+  );
+}
+
+List<Widget> _sectionActions(BuildContext context, Map<String, dynamic> subject, _Section current, {String? classroomName}) {
   final scheme = Theme.of(context).colorScheme;
   Widget action(_Section section, IconData icon, String tooltip) {
     final active = section == current;
     return IconButton(
       icon: Icon(icon, color: active ? AppColors.primary : scheme.onSurfaceVariant),
       tooltip: tooltip,
-      onPressed: active ? null : () => _switchSection(context, subject, section),
+      onPressed: active ? null : () => _switchSection(context, subject, section, classroomName: classroomName),
     );
   }
 
@@ -98,7 +150,8 @@ Widget _emptyHint(BuildContext context, String text) {
 
 class SubjectDashboardScreen extends StatefulWidget {
   final Map<String, dynamic> subject;
-  const SubjectDashboardScreen({super.key, required this.subject});
+  final String? classroomName;
+  const SubjectDashboardScreen({super.key, required this.subject, this.classroomName});
 
   @override
   State<SubjectDashboardScreen> createState() => _SubjectDashboardScreenState();
@@ -140,25 +193,26 @@ class _SubjectDashboardScreenState extends State<SubjectDashboardScreen> {
 
   Widget _statTile(String label, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: Theme.of(context).cardTheme.color ?? Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(7),
+            padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(9)),
-            child: Icon(icon, color: color, size: 17),
+            child: Icon(icon, color: color, size: 15),
           ),
-          const SizedBox(height: 8),
-          Text(value, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: color)),
+          const SizedBox(height: 6),
+          Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: color)),
           const SizedBox(height: 2),
           Text(label, maxLines: 2, overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+              style: TextStyle(fontSize: 10.5, height: 1.15, color: Theme.of(context).colorScheme.onSurfaceVariant)),
         ],
       ),
     );
@@ -434,7 +488,7 @@ class _SubjectDashboardScreenState extends State<SubjectDashboardScreen> {
               crossAxisCount: 2,
               mainAxisSpacing: 12,
               crossAxisSpacing: 12,
-              mainAxisExtent: 100,
+              mainAxisExtent: 112,
             ),
             children: [
               _statTile('Students Enrolled', '${_asNum(_stats['students']).toInt()}', Icons.groups_outlined, AppColors.primary),
@@ -476,19 +530,36 @@ class _SubjectDashboardScreenState extends State<SubjectDashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('${widget.subject['subject_name'] ?? 'Subject'}'),
-        actions: _sectionActions(context, widget.subject, _Section.dashboard),
+        actions: _sectionActions(context, widget.subject, _Section.dashboard, classroomName: widget.classroomName),
       ),
-      body: SafeArea(top: false, child: _buildBody()),
+      body: SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            _sectionBanner(context, classroomName: widget.classroomName, subject: widget.subject, section: _Section.dashboard),
+            Expanded(child: _buildBody()),
+          ],
+        ),
+      ),
     );
   }
 }
 
 // ── LESSONS ──────────────────────────────────────────────────────────────
 
+const _monthAbbr = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const _weekdayInitial = {1: 'M', 2: 'T', 3: 'W', 4: 'T', 5: 'F'};
+
+String _formatCardDate(String isoDate) {
+  final d = DateTime.tryParse(isoDate);
+  if (d == null) return isoDate;
+  return '${_monthAbbr[d.month - 1]} ${d.day}';
+}
+
 class SubjectLessonsScreen extends StatefulWidget {
   final Map<String, dynamic> subject;
-  const SubjectLessonsScreen({super.key, required this.subject});
+  final String? classroomName;
+  const SubjectLessonsScreen({super.key, required this.subject, this.classroomName});
 
   @override
   State<SubjectLessonsScreen> createState() => _SubjectLessonsScreenState();
@@ -498,9 +569,10 @@ class _SubjectLessonsScreenState extends State<SubjectLessonsScreen> {
   late ApiClient _client;
   bool _loading = true;
   String? _error;
-  List<Map<String, dynamic>> _lessons = [];
-
-  static const _terms = {1: 'Term 1', 2: 'Term 2', 3: 'Term 3'};
+  String _termLabel = 'Term';
+  List<Map<String, dynamic>> _terms = [];
+  int _selectedTerm = 0;
+  List<Map<String, dynamic>> _weeks = [];
 
   int get _classSubId => _classSubIdOf(widget.subject);
 
@@ -511,15 +583,18 @@ class _SubjectLessonsScreenState extends State<SubjectLessonsScreen> {
     _load();
   }
 
-  Future<void> _load() async {
+  Future<void> _load({int? term}) async {
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
-      final body = await _client.getSubjectLessons(_classSubId);
+      final body = await _client.getSubjectLessonsCalendar(_classSubId, term: term);
       setState(() {
-        _lessons = List<Map<String, dynamic>>.from(body['lessons'] ?? []);
+        _termLabel = '${body['termLabel'] ?? 'Term'}';
+        _terms = List<Map<String, dynamic>>.from(body['terms'] ?? []);
+        _selectedTerm = _asNum(body['selectedTerm']).toInt();
+        _weeks = List<Map<String, dynamic>>.from(body['weeks'] ?? []);
         _loading = false;
       });
     } catch (e) {
@@ -530,58 +605,53 @@ class _SubjectLessonsScreenState extends State<SubjectLessonsScreen> {
     }
   }
 
-  Widget _buildBody() {
+  void _openDay(Map<String, dynamic> day, int weekNum) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => LessonDayViewScreen(
+          subject: widget.subject,
+          classroomName: widget.classroomName,
+          date: '${day['date'] ?? ''}',
+          weekNum: weekNum,
+          termLabel: '$_termLabel $_selectedTerm',
+          isHoliday: day['isHoliday'] == true,
+          holidayName: day['holidayName'] as String?,
+          lessons: List<Map<String, dynamic>>.from(day['lessons'] ?? []),
+        ),
+      ),
+    );
+  }
+
+  Widget _termTabs() {
+    if (_terms.length <= 1) return const SizedBox.shrink();
     final scheme = Theme.of(context).colorScheme;
-    if (_loading) return const Center(child: CircularProgressIndicator());
-    if (_error != null) return Center(child: Text('Failed to load lessons: $_error'));
-    if (_lessons.isEmpty) {
-      return RefreshIndicator(
-        onRefresh: _load,
-        child: ListView(children: const [SizedBox(height: 100), Center(child: Text('No lessons published yet.'))]),
-      );
-    }
-    return RefreshIndicator(
-      onRefresh: _load,
+    return SizedBox(
+      height: 44,
       child: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: _lessons.length,
-        separatorBuilder: (context, i) => const SizedBox(height: 8),
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        itemCount: _terms.length,
+        separatorBuilder: (context, i) => const SizedBox(width: 8),
         itemBuilder: (context, i) {
-          final l = _lessons[i];
-          final term = _terms[(_asNum(l['lesson_term'])).toInt()] ?? '';
-          return Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Theme.of(context).cardTheme.color ?? scheme.surface,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('${l['lesson_title'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-                if ((l['lesson_desc'] ?? '').toString().isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text('${l['lesson_desc']}', maxLines: 2, overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant)),
-                ],
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    if (term.isNotEmpty) ...[
-                      Text(term, style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
-                      const SizedBox(width: 10),
-                    ],
-                    Icon(Icons.attach_file, size: 13, color: scheme.onSurfaceVariant),
-                    Text(' ${l['file_count'] ?? 0}', style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
-                    const SizedBox(width: 8),
-                    Icon(Icons.videocam_outlined, size: 13, color: scheme.onSurfaceVariant),
-                    Text(' ${l['video_count'] ?? 0}', style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
-                    const SizedBox(width: 8),
-                    Icon(Icons.link, size: 13, color: scheme.onSurfaceVariant),
-                    Text(' ${l['link_count'] ?? 0}', style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
-                  ],
-                ),
-              ],
+          final t = _terms[i];
+          final num = _asNum(t['termNum']).toInt();
+          final active = num == _selectedTerm;
+          return InkWell(
+            borderRadius: BorderRadius.circular(20),
+            onTap: active ? null : () => _load(term: num),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: active ? AppColors.primary : scheme.surfaceContainerHighest.withValues(alpha: 0.35),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              alignment: Alignment.center,
+              child: Text('$_termLabel $num',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: active ? Colors.white : scheme.onSurfaceVariant,
+                  )),
             ),
           );
         },
@@ -589,14 +659,163 @@ class _SubjectLessonsScreenState extends State<SubjectLessonsScreen> {
     );
   }
 
+  Widget _miniStat(IconData icon, int count, Color color) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 10, color: color),
+        const SizedBox(width: 2),
+        Text('$count', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: color)),
+      ],
+    );
+  }
+
+  Widget _dayCard(Map<String, dynamic> day, int weekNum) {
+    final scheme = Theme.of(context).colorScheme;
+    final date = '${day['date'] ?? ''}';
+    final dt = DateTime.tryParse(date);
+    final dayInitial = dt != null ? (_weekdayInitial[dt.weekday] ?? '') : '';
+    final isHoliday = day['isHoliday'] == true;
+    final holidayName = day['holidayName'] as String?;
+    final lessonCount = _asNum(day['lessonCount']).toInt();
+    final fileCount = _asNum(day['fileCount']).toInt();
+    final videoCount = _asNum(day['videoCount']).toInt();
+    final linkCount = _asNum(day['linkCount']).toInt();
+    final assessmentCount = _asNum(day['assessmentCount']).toInt();
+    final now = DateTime.now();
+    final isToday = dt != null && now.year == dt.year && now.month == dt.month && now.day == dt.day;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(10),
+      onTap: () => _openDay(day, weekNum),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+        decoration: BoxDecoration(
+          color: isHoliday
+              ? AppColors.warning.withValues(alpha: 0.10)
+              : (Theme.of(context).cardTheme.color ?? scheme.surface),
+          borderRadius: BorderRadius.circular(10),
+          border: isToday ? Border.all(color: AppColors.primary, width: 1.4) : null,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(dayInitial, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
+                Text(_formatCardDate(date), style: TextStyle(fontSize: 9, color: scheme.onSurfaceVariant)),
+              ],
+            ),
+            const SizedBox(height: 4),
+            if (isHoliday)
+              Text(
+                (holidayName != null && holidayName.isNotEmpty) ? holidayName : 'Holiday',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 8.5, color: AppColors.warning, fontWeight: FontWeight.w600),
+              )
+            else if (lessonCount == 0)
+              Text('—', style: TextStyle(fontSize: 10, color: scheme.onSurfaceVariant))
+            else ...[
+              Text('$lessonCount lesson${lessonCount == 1 ? '' : 's'}',
+                  style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: AppColors.primary)),
+              const SizedBox(height: 3),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _miniStat(Icons.attach_file, fileCount, scheme.onSurfaceVariant),
+                  _miniStat(Icons.videocam_outlined, videoCount, scheme.onSurfaceVariant),
+                ],
+              ),
+              const SizedBox(height: 2),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _miniStat(Icons.link, linkCount, scheme.onSurfaceVariant),
+                  _miniStat(Icons.quiz_outlined, assessmentCount, scheme.onSurfaceVariant),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _weekRow(Map<String, dynamic> week) {
+    final weekNum = _asNum(week['weekNum']).toInt();
+    final days = List<Map<String, dynamic>>.from(week['days'] ?? []);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Week $weekNum', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+          const SizedBox(height: 6),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (var i = 0; i < days.length; i++) ...[
+                if (i > 0) const SizedBox(width: 5),
+                Expanded(child: _dayCard(days[i], weekNum)),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_error != null) return Center(child: Text('Failed to load lessons: $_error'));
+    if (_terms.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: () => _load(term: _selectedTerm == 0 ? null : _selectedTerm),
+        child: ListView(children: const [
+          SizedBox(height: 100),
+          Center(child: Text('Term schedule not configured for this school yet.')),
+        ]),
+      );
+    }
+    return Column(
+      children: [
+        _termTabs(),
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: () => _load(term: _selectedTerm),
+            child: _weeks.isEmpty
+                ? ListView(children: const [
+                    SizedBox(height: 100),
+                    Center(child: Text('No weeks configured for this term.')),
+                  ])
+                : ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [for (final w in _weeks) _weekRow(w)],
+                  ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('${widget.subject['subject_name'] ?? 'Subject'}'),
-        actions: _sectionActions(context, widget.subject, _Section.lessons),
+        actions: _sectionActions(context, widget.subject, _Section.lessons, classroomName: widget.classroomName),
       ),
-      body: SafeArea(top: false, child: _buildBody()),
+      body: SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            _sectionBanner(context, classroomName: widget.classroomName, subject: widget.subject, section: _Section.lessons),
+            Expanded(child: _buildBody()),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -605,7 +824,8 @@ class _SubjectLessonsScreenState extends State<SubjectLessonsScreen> {
 
 class SubjectAssignmentsScreen extends StatefulWidget {
   final Map<String, dynamic> subject;
-  const SubjectAssignmentsScreen({super.key, required this.subject});
+  final String? classroomName;
+  const SubjectAssignmentsScreen({super.key, required this.subject, this.classroomName});
 
   @override
   State<SubjectAssignmentsScreen> createState() => _SubjectAssignmentsScreenState();
@@ -754,10 +974,17 @@ class _SubjectAssignmentsScreenState extends State<SubjectAssignmentsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('${widget.subject['subject_name'] ?? 'Subject'}'),
-        actions: _sectionActions(context, widget.subject, _Section.assignments),
+        actions: _sectionActions(context, widget.subject, _Section.assignments, classroomName: widget.classroomName),
       ),
-      body: SafeArea(top: false, child: _buildBody()),
+      body: SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            _sectionBanner(context, classroomName: widget.classroomName, subject: widget.subject, section: _Section.assignments),
+            Expanded(child: _buildBody()),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -766,7 +993,8 @@ class _SubjectAssignmentsScreenState extends State<SubjectAssignmentsScreen> {
 
 class SubjectFeedbackScreen extends StatefulWidget {
   final Map<String, dynamic> subject;
-  const SubjectFeedbackScreen({super.key, required this.subject});
+  final String? classroomName;
+  const SubjectFeedbackScreen({super.key, required this.subject, this.classroomName});
 
   @override
   State<SubjectFeedbackScreen> createState() => _SubjectFeedbackScreenState();
@@ -1050,10 +1278,17 @@ class _SubjectFeedbackScreenState extends State<SubjectFeedbackScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('${widget.subject['subject_name'] ?? 'Subject'}'),
-        actions: _sectionActions(context, widget.subject, _Section.feedback),
+        actions: _sectionActions(context, widget.subject, _Section.feedback, classroomName: widget.classroomName),
       ),
-      body: SafeArea(top: false, child: _buildBody()),
+      body: SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            _sectionBanner(context, classroomName: widget.classroomName, subject: widget.subject, section: _Section.feedback),
+            Expanded(child: _buildBody()),
+          ],
+        ),
+      ),
     );
   }
 }

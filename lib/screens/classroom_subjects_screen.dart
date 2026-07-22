@@ -10,8 +10,16 @@ import 'subject_dashboard_screen.dart';
 class ClassroomSubjectsScreen extends StatefulWidget {
   final int classId;
   final int? childId;
+  final String? classroomName;
+  final bool interactive;
 
-  const ClassroomSubjectsScreen({super.key, required this.classId, this.childId});
+  const ClassroomSubjectsScreen({
+    super.key,
+    required this.classId,
+    this.childId,
+    this.classroomName,
+    this.interactive = false,
+  });
 
   @override
   State<ClassroomSubjectsScreen> createState() => _ClassroomSubjectsScreenState();
@@ -64,6 +72,7 @@ class _ClassroomSubjectsScreenState extends State<ClassroomSubjectsScreen> {
     final scheme = Theme.of(context).colorScheme;
     final teacherName = s['teacher_name'] as String?;
     final photo = s['teacher_photo'] as String?;
+    final tapEnabled = _canFullAccess && widget.interactive;
     final tile = Container(
       decoration: BoxDecoration(
         color: Theme.of(context).cardTheme.color ?? scheme.surface,
@@ -93,7 +102,7 @@ class _ClassroomSubjectsScreenState extends State<ClassroomSubjectsScreen> {
             teacherName != null && teacherName.isNotEmpty ? teacherName : 'Not assigned',
             style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
           ),
-          if (_canFullAccess) ...[
+          if (tapEnabled) ...[
             const SizedBox(width: 4),
             Icon(Icons.chevron_right, size: 18, color: scheme.onSurfaceVariant),
           ],
@@ -102,11 +111,16 @@ class _ClassroomSubjectsScreenState extends State<ClassroomSubjectsScreen> {
     );
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: _canFullAccess
+      child: tapEnabled
           ? InkWell(
               borderRadius: BorderRadius.circular(12),
               onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => SubjectDashboardScreen(subject: s)),
+                MaterialPageRoute(
+                  builder: (_) => SubjectDashboardScreen(
+                    subject: s,
+                    classroomName: widget.classroomName,
+                  ),
+                ),
               ),
               child: tile,
             )

@@ -23,6 +23,8 @@ class ApiConfig {
   static String classroomDiscussionUrl(int id) => '$baseUrl/api/classroom/$id/discussion';
   static String subjectDashboardUrl(int classSubId) => '$baseUrl/api/classroom/subject/$classSubId/dashboard';
   static String subjectLessonsUrl(int classSubId) => '$baseUrl/api/classroom/subject/$classSubId/lessons';
+  static String subjectLessonsCalendarUrl(int classSubId, {int? term}) =>
+      '$baseUrl/api/classroom/subject/$classSubId/lessons/calendar${term != null ? '?term=$term' : ''}';
   static String subjectAssignmentsUrl(int classSubId) => '$baseUrl/api/classroom/subject/$classSubId/assignments';
   static String subjectFeedbackUrl(int classSubId) => '$baseUrl/api/classroom/subject/$classSubId/feedback';
 

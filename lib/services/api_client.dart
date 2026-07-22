@@ -592,6 +592,17 @@ class ApiClient {
     return body;
   }
 
+  Future<Map<String, dynamic>> getSubjectLessonsCalendar(int classSubId, {int? term}) async {
+    final res = await http
+        .get(Uri.parse(ApiConfig.subjectLessonsCalendarUrl(classSubId, term: term)), headers: auth.authHeaders)
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to load lesson calendar.');
+    }
+    return body;
+  }
+
   Future<Map<String, dynamic>> getSubjectAssignments(int classSubId) async {
     final res = await http
         .get(Uri.parse(ApiConfig.subjectAssignmentsUrl(classSubId)), headers: auth.authHeaders)
