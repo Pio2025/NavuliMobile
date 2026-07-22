@@ -569,4 +569,78 @@ class ApiClient {
     }
     return body;
   }
+
+  Future<Map<String, dynamic>> getSubjectDashboard(int classSubId) async {
+    final res = await http
+        .get(Uri.parse(ApiConfig.subjectDashboardUrl(classSubId)), headers: auth.authHeaders)
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to load subject dashboard.');
+    }
+    return body;
+  }
+
+  Future<Map<String, dynamic>> getSubjectLessons(int classSubId) async {
+    final res = await http
+        .get(Uri.parse(ApiConfig.subjectLessonsUrl(classSubId)), headers: auth.authHeaders)
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to load lessons.');
+    }
+    return body;
+  }
+
+  Future<Map<String, dynamic>> getSubjectAssignments(int classSubId) async {
+    final res = await http
+        .get(Uri.parse(ApiConfig.subjectAssignmentsUrl(classSubId)), headers: auth.authHeaders)
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to load assignments.');
+    }
+    return body;
+  }
+
+  Future<Map<String, dynamic>> getSubjectFeedback(int classSubId) async {
+    final res = await http
+        .get(Uri.parse(ApiConfig.subjectFeedbackUrl(classSubId)), headers: auth.authHeaders)
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to load feedback.');
+    }
+    return body;
+  }
+
+  Future<Map<String, dynamic>> submitSubjectFeedback(
+    int classSubId, {
+    required int overallRating,
+    int teachingRating = 0,
+    int contentRating = 0,
+    int engagementRating = 0,
+    String comment = '',
+    bool isAnonymous = false,
+  }) async {
+    final res = await http
+        .post(
+          Uri.parse(ApiConfig.subjectFeedbackUrl(classSubId)),
+          headers: {...auth.authHeaders, 'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'overall_rating': overallRating,
+            'teaching_rating': teachingRating,
+            'content_rating': contentRating,
+            'engagement_rating': engagementRating,
+            'comment': comment,
+            'is_anonymous': isAnonymous,
+          }),
+        )
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to submit feedback.');
+    }
+    return body;
+  }
 }

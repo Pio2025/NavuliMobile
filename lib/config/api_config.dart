@@ -19,6 +19,10 @@ class ApiConfig {
   static String classroomAttendanceUrl(int id) => '$baseUrl/api/classroom/$id/attendance';
   static String classroomExamUrl(int id) => '$baseUrl/api/classroom/$id/exam';
   static String classroomDiscussionUrl(int id) => '$baseUrl/api/classroom/$id/discussion';
+  static String subjectDashboardUrl(int classSubId) => '$baseUrl/api/classroom/subject/$classSubId/dashboard';
+  static String subjectLessonsUrl(int classSubId) => '$baseUrl/api/classroom/subject/$classSubId/lessons';
+  static String subjectAssignmentsUrl(int classSubId) => '$baseUrl/api/classroom/subject/$classSubId/assignments';
+  static String subjectFeedbackUrl(int classSubId) => '$baseUrl/api/classroom/subject/$classSubId/feedback';
 
   static const String wallFeedUrl = '$baseUrl/api/wall/feed';
   static const String wallPostUrl = '$baseUrl/api/wall/post';

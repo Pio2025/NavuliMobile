@@ -5,7 +5,7 @@ import '../config/api_config.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
-import 'subject_detail_screen.dart';
+import 'subject_dashboard_screen.dart';
 
 class ClassroomSubjectsScreen extends StatefulWidget {
   final int classId;
@@ -105,7 +105,7 @@ class _ClassroomSubjectsScreenState extends State<ClassroomSubjectsScreen> {
           ? InkWell(
               borderRadius: BorderRadius.circular(12),
               onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => SubjectDetailScreen(subject: s)),
+                MaterialPageRoute(builder: (_) => SubjectDashboardScreen(subject: s)),
               ),
               child: tile,
             )
