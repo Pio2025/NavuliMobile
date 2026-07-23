@@ -8,6 +8,8 @@ import '../theme/app_theme.dart';
 import '../widgets/error_state.dart';
 import 'exam_report_card_screen.dart';
 
+int _asInt(dynamic v) => (v is num) ? v.round() : (num.tryParse('$v')?.round() ?? 0);
+
 class ClassroomExamScreen extends StatefulWidget {
   final int classId;
   final int? childId;
@@ -198,8 +200,8 @@ class _ClassroomExamScreenState extends State<ClassroomExamScreen> {
           runSpacing: 8,
           children: [
             _statChip('Sat', '${stats['number_sat'] ?? 0}', AppColors.primary),
-            _statChip('Pass %', '${stats['pct_pass'] ?? 0}%', AppColors.success),
-            _statChip('Class Avg', '${stats['avg_score'] ?? '—'}%', AppColors.warning),
+            _statChip('Pass %', '${_asInt(stats['pct_pass'] ?? 0)}%', AppColors.success),
+            _statChip('Class Avg', stats['avg_score'] != null ? '${_asInt(stats['avg_score'])}%' : '—', AppColors.warning),
           ],
         ),
         const SizedBox(height: 16),
