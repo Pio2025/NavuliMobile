@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../config/api_config.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
+import 'exam_report_card_screen.dart';
 
 class ClassroomExamScreen extends StatefulWidget {
   final int classId;
@@ -103,76 +105,80 @@ class _ClassroomExamScreenState extends State<ClassroomExamScreen> {
     );
   }
 
-  Widget _reportCard(Map<String, dynamic> termData) {
+  void _openExam(Map<String, dynamic> termData, {required String examName, required String studentName, required String studentPhoto}) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ExamReportCardScreen(
+          classroom: Map<String, dynamic>.from(_body['classroom'] ?? {}),
+          examName: examName,
+          studentName: studentName,
+          studentPhoto: studentPhoto,
+          termLabel: '${_body['termLabel'] ?? 'Term'}',
+          term: _term,
+          termData: termData,
+        ),
+      ),
+    );
+  }
+
+  Widget _examList(Map<String, dynamic> termData, {required String studentName, required String studentPhoto}) {
     final scheme = Theme.of(context).colorScheme;
+    final exams = List<Map<String, dynamic>>.from(termData['exams'] ?? []);
     final published = termData['published'] == true;
-    if (!published) {
+
+    if (exams.isEmpty) {
       return Padding(
-        padding: const EdgeInsets.only(top: 60),
+        padding: const EdgeInsets.only(top: 40),
         child: Center(
-          child: Text('Results for this term have not been published yet.',
+          child: Text('No exams defined for this term yet.',
               textAlign: TextAlign.center, style: TextStyle(color: scheme.onSurfaceVariant)),
         ),
       );
     }
-    final report = Map<String, dynamic>.from(termData['report'] ?? {});
-    final stats = Map<String, dynamic>.from(termData['stats'] ?? {});
-    final marks = List<Map<String, dynamic>>.from(report['marks'] ?? []);
-    final pct = report['overall_pct'];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            _statChip('Overall %', pct != null ? '$pct%' : '—', AppColors.primary),
-            _statChip('Position', '${stats['position'] ?? '—'}/${stats['total_ranked'] ?? '—'}', AppColors.secondary),
-            _statChip('Class Avg', '${stats['avg_score'] ?? '—'}%', AppColors.warning),
-          ],
-        ),
-        const SizedBox(height: 16),
-        for (final m in marks)
+        for (final exam in exams)
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).cardTheme.color ?? scheme.surface,
+            child: Material(
+              color: Theme.of(context).cardTheme.color ?? scheme.surface,
+              borderRadius: BorderRadius.circular(12),
+              child: InkWell(
                 borderRadius: BorderRadius.circular(12),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text('${m['subject_name'] ?? ''}',
-                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                onTap: () => _openExam(termData,
+                    examName: '${exam['examName'] ?? 'Exam'}', studentName: studentName, studentPhoto: studentPhoto),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                  child: Row(
+                    children: [
+                      Icon(Icons.description_outlined, color: AppColors.primary),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('${exam['examName'] ?? 'Exam'}',
+                                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
+                            const SizedBox(height: 2),
+                            Text(
+                              published ? 'Report card available' : 'Not yet published',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                color: published ? AppColors.success : scheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.chevron_right, color: scheme.onSurfaceVariant),
+                    ],
                   ),
-                  Text(
-                    (m['is_absent'] == true || m['is_absent'] == 1)
-                        ? 'Absent'
-                        : '${m['mark'] ?? '—'} / ${m['total_mark'] ?? '—'}',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: (m['is_absent'] == true || m['is_absent'] == 1) ? AppColors.danger : null,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
-        if ((report['ct_comment'] ?? '').toString().isNotEmpty) ...[
-          const SizedBox(height: 8),
-          Text('Class Teacher: ${report['ct_comment']}',
-              style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant)),
-        ],
-        if ((report['principal_comment'] ?? '').toString().isNotEmpty) ...[
-          const SizedBox(height: 4),
-          Text('Principal: ${report['principal_comment']}',
-              style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant)),
-        ],
       ],
     );
   }
@@ -251,9 +257,31 @@ class _ClassroomExamScreenState extends State<ClassroomExamScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         for (final child in List<Map<String, dynamic>>.from(children)) ...[
-          Text('${child['childName'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 16,
+                backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+                backgroundImage: '${child['childPhoto'] ?? ''}'.isNotEmpty
+                    ? NetworkImage(ApiConfig.photoUrl('${child['childPhoto']}'))
+                    : null,
+                child: '${child['childPhoto'] ?? ''}'.isEmpty
+                    ? Text(
+                        '${child['childName'] ?? ''}'.isNotEmpty ? '${child['childName']}'[0].toUpperCase() : '?',
+                        style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.primary, fontSize: 12),
+                      )
+                    : null,
+              ),
+              const SizedBox(width: 10),
+              Text('${child['childName'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+            ],
+          ),
           const SizedBox(height: 10),
-          _reportCard(_termsAt(child)['$_term'] ?? {}),
+          _examList(
+            Map<String, dynamic>.from(_termsAt(child)['$_term'] ?? {}),
+            studentName: '${child['childName'] ?? ''}',
+            studentPhoto: '${child['childPhoto'] ?? ''}',
+          ),
           const SizedBox(height: 22),
         ],
       ],
@@ -282,7 +310,11 @@ class _ClassroomExamScreenState extends State<ClassroomExamScreen> {
                         if (mode == 'children')
                           _childrenSection(List<dynamic>.from(_body['children'] ?? []))
                         else if (mode == 'self')
-                          _reportCard(Map<String, dynamic>.from(terms['$_term'] ?? {}))
+                          _examList(
+                            Map<String, dynamic>.from(terms['$_term'] ?? {}),
+                            studentName: trim('${_body['student']?['fname'] ?? ''} ${_body['student']?['lname'] ?? ''}'),
+                            studentPhoto: '${_body['student']?['photo'] ?? ''}',
+                          )
                         else
                           _summaryGrid(Map<String, dynamic>.from(terms['$_term'] ?? {})),
                       ],
