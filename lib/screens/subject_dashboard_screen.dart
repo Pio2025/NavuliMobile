@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../config/api_config.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
@@ -1255,6 +1256,31 @@ class _SubjectFeedbackScreenState extends State<SubjectFeedbackScreen> {
     );
   }
 
+  Widget _childHeaderCard(Map<String, dynamic> child) {
+    final scheme = Theme.of(context).colorScheme;
+    final photo = '${child['childPhoto'] ?? ''}';
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardTheme.color ?? scheme.surface,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 20,
+            backgroundImage: photo.isNotEmpty ? NetworkImage(ApiConfig.photoUrl(photo)) : null,
+            child: photo.isEmpty ? const Icon(Icons.person, color: Colors.white, size: 20) : null,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text('${child['childName'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _childrenSection(List<dynamic> children) {
     if (children.isEmpty) {
       return const Padding(
@@ -1266,7 +1292,7 @@ class _SubjectFeedbackScreenState extends State<SubjectFeedbackScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         for (final child in List<Map<String, dynamic>>.from(children)) ...[
-          Text('${child['childName'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+          _childHeaderCard(child),
           const SizedBox(height: 10),
           _readOnlyCard(child['feedback'] is Map ? Map<String, dynamic>.from(child['feedback']) : null),
           const SizedBox(height: 22),

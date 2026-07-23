@@ -398,10 +398,27 @@ Future<Uint8List> _buildTranscriptPdf(Map<String, dynamic> data, String studentN
   final scoreColor = score >= 80 ? PdfColors.green800 : (score >= 50 ? PdfColors.orange800 : PdfColors.red800);
   final letters = ['A', 'B', 'C', 'D', 'E', 'F'];
 
+  final generatedLine = 'Generated on ${_formatDate(DateTime.now().toIso8601String())} - $studentName - ${quiz['name'] ?? ''}';
+
   final doc = pw.Document();
   doc.addPage(
     pw.MultiPage(
       pageFormat: PdfPageFormat.a4,
+      footer: (context) => pw.Column(
+        children: [
+          pw.Divider(color: PdfColors.grey400),
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Expanded(
+                child: pw.Text(generatedLine, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
+              ),
+              pw.Text('Page ${context.pageNumber} of ${context.pagesCount}',
+                  style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
+            ],
+          ),
+        ],
+      ),
       build: (context) => [
         pw.Text('${quiz['name'] ?? ''}', style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
         pw.Text('Quiz Transcript - ${lesson['title'] ?? ''}', style: const pw.TextStyle(fontSize: 13, color: PdfColors.grey700)),
@@ -453,10 +470,6 @@ Future<Uint8List> _buildTranscriptPdf(Map<String, dynamic> data, String studentN
         ),
         pw.SizedBox(height: 18),
         for (var i = 0; i < questions.length; i++) _questionBlock(i + 1, questions[i], letters),
-        pw.SizedBox(height: 16),
-        pw.Divider(color: PdfColors.grey400),
-        pw.Text('Generated on ${_formatDate(DateTime.now().toIso8601String())} - $studentName - ${quiz['name'] ?? ''}',
-            style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
       ],
     ),
   );
