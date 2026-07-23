@@ -486,35 +486,37 @@ pw.Widget _questionBlock(int index, Map<String, dynamic> q, List<String> letters
       border: pw.Border.all(color: PdfColors.grey300),
       borderRadius: pw.BorderRadius.circular(4),
     ),
-    child: pw.Row(
-      crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+    child: pw.Stack(
       children: [
-        pw.Container(width: 3, color: borderColor),
-        pw.Expanded(
-          child: pw.Padding(
-            padding: const pw.EdgeInsets.all(10),
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Row(children: [
-                  pw.Container(
-                    padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: const pw.BoxDecoration(color: PdfColors.blue400, borderRadius: pw.BorderRadius.all(pw.Radius.circular(3))),
-                    child: pw.Text('Q$index', style: const pw.TextStyle(fontSize: 9, color: PdfColors.white, fontWeight: pw.FontWeight.bold)),
-                  ),
-                  pw.SizedBox(width: 8),
-                  pw.Text(
-                    !isAnswered ? 'Not Answered' : (isCorrect ? 'Correct' : 'Incorrect'),
-                    style: pw.TextStyle(fontSize: 9, color: !isAnswered ? PdfColors.grey600 : (isCorrect ? PdfColors.green700 : PdfColors.red700)),
-                  ),
-                ]),
-                pw.SizedBox(height: 6),
-                pw.Text('${q['question'] ?? ''}', style: const pw.TextStyle(fontSize: 11)),
-                pw.SizedBox(height: 6),
-                for (var ai = 0; ai < answers.length; ai++) _answerLine(ai, answers[ai], letters),
-              ],
-            ),
+        pw.Padding(
+          padding: const pw.EdgeInsets.fromLTRB(13, 10, 10, 10),
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Row(children: [
+                pw.Container(
+                  padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: const pw.BoxDecoration(color: PdfColors.blue400, borderRadius: pw.BorderRadius.all(pw.Radius.circular(3))),
+                  child: pw.Text('Q$index', style: const pw.TextStyle(fontSize: 9, color: PdfColors.white, fontWeight: pw.FontWeight.bold)),
+                ),
+                pw.SizedBox(width: 8),
+                pw.Text(
+                  !isAnswered ? 'Not Answered' : (isCorrect ? 'Correct' : 'Incorrect'),
+                  style: pw.TextStyle(fontSize: 9, color: !isAnswered ? PdfColors.grey600 : (isCorrect ? PdfColors.green700 : PdfColors.red700)),
+                ),
+              ]),
+              pw.SizedBox(height: 6),
+              pw.Text('${q['question'] ?? ''}', style: const pw.TextStyle(fontSize: 11)),
+              pw.SizedBox(height: 6),
+              for (var ai = 0; ai < answers.length; ai++) _answerLine(ai, answers[ai], letters),
+            ],
           ),
+        ),
+        pw.Positioned(
+          left: 0,
+          top: 0,
+          bottom: 0,
+          child: pw.Container(width: 3, color: borderColor),
         ),
       ],
     ),
