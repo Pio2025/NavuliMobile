@@ -319,18 +319,16 @@ class _ExamReportCardScreenState extends State<ExamReportCardScreen> {
               ),
               pw.SizedBox(height: 10),
 
-              // Comments
+              // Comments / signatures
               pw.Row(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
-                  pw.Expanded(child: _commentBox('Class Teacher Comment', '${_report['ct_comment'] ?? ''}', PdfColors.blue50, PdfColors.blue200)),
+                  pw.Expanded(child: _commentBox('Class Teacher Signature', '${_report['ct_comment'] ?? ''}', PdfColors.blue50, PdfColors.blue200)),
                   pw.SizedBox(width: 8),
-                  pw.Expanded(child: _commentBox('Principal Comment', '${_report['principal_comment'] ?? ''}', PdfColors.green50, PdfColors.green200)),
+                  pw.Expanded(child: _commentBox('Principal Signature', '${_report['principal_comment'] ?? ''}', PdfColors.green50, PdfColors.green200)),
                 ],
               ),
-              pw.Expanded(child: pw.SizedBox()),
               pw.SizedBox(height: 10),
-
               pw.Divider(color: PdfColors.grey300),
               pw.Center(
                 child: pw.Text(
@@ -339,6 +337,8 @@ class _ExamReportCardScreenState extends State<ExamReportCardScreen> {
                   style: const pw.TextStyle(fontSize: 6.5, color: PdfColors.grey500),
                 ),
               ),
+
+              pw.Expanded(child: pw.SizedBox()),
               pw.SizedBox(height: 10),
 
               pw.Center(
@@ -404,10 +404,11 @@ class _ExamReportCardScreenState extends State<ExamReportCardScreen> {
         child: pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            pw.Text(title, style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
-            // Blank space reserved for the teacher's/principal's handwritten signature
-            // once printed — replaces the removed parent/guardian signature line.
+            // Blank space reserved for the handwritten signature, sitting above
+            // its label — replaces the removed parent/guardian signature line.
             pw.SizedBox(height: 26),
+            pw.Text(title, style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
+            pw.SizedBox(height: 4),
             pw.Text(text.isNotEmpty ? text : 'No comment.', style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey700)),
           ],
         ),
