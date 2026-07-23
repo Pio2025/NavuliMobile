@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/error_state.dart';
 import 'attendance_daily_detail_screen.dart';
 import 'attendance_subject_detail_screen.dart';
 
@@ -365,7 +366,7 @@ class _ClassroomAttendanceScreenState extends State<ClassroomAttendanceScreen>
     if (_error != null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Attendance')),
-        body: Center(child: Text('Failed to load attendance: $_error')),
+        body: ErrorState(error: _error!, onRetry: _load),
       );
     }
     if (_terms.isEmpty) {

@@ -7,6 +7,8 @@ import '../screens/quiz_score_screen.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
+import 'app_snackbar.dart';
+import 'error_state.dart';
 import 'lesson_discussion_section.dart';
 
 class _FileTypeStyle {
@@ -61,11 +63,11 @@ Future<void> _openUrl(BuildContext context, String url) async {
   try {
     final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!ok && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not open link.')));
+      AppSnackbar.error(context, 'Could not open link.');
     }
   } catch (_) {
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not open link.')));
+      AppSnackbar.error(context, 'Could not open link.');
     }
   }
 }
@@ -408,7 +410,7 @@ class _LessonDetailContentState extends State<LessonDetailContent> {
     if (_error != null) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 24),
-        child: Center(child: Text('Failed to load lesson: $_error')),
+        child: ErrorState(error: _error!, onRetry: _load),
       );
     }
     return Column(

@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_snackbar.dart';
+import '../widgets/error_state.dart';
 
 class NotificationScreen extends StatefulWidget {
   final ValueChanged<int>? onUnreadCountChanged;
@@ -45,8 +47,7 @@ class _NotificationScreenState extends State<NotificationScreen>
       await _refresh();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('$e')));
+      AppSnackbar.error(context, friendlyErrorMessage(e));
     }
   }
 
@@ -89,7 +90,7 @@ class _NotificationScreenState extends State<NotificationScreen>
               return const Center(child: CircularProgressIndicator());
             }
             if (snapshot.hasError) {
-              return Center(child: Text('Failed to load: ${snapshot.error}'));
+              return ErrorState(error: snapshot.error!, onRetry: _refresh);
             }
 
             final data = snapshot.data!;

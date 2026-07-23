@@ -9,6 +9,8 @@ import 'package:provider/provider.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_snackbar.dart';
+import '../widgets/error_state.dart';
 
 num _asNum(dynamic v) => (v is num) ? v : (num.tryParse('$v') ?? 0);
 int _asInt(dynamic v) => _asNum(v).toInt();
@@ -76,7 +78,7 @@ class _QuizScoreScreenState extends State<QuizScoreScreen> {
       await Printing.sharePdf(bytes: bytes, filename: 'quiz-transcript-${widget.quizId}.pdf');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not generate transcript: $e')));
+      AppSnackbar.error(context, 'Could not generate transcript. Please check your connection and try again.');
     } finally {
       if (mounted) setState(() => _generatingPdf = false);
     }
@@ -103,21 +105,7 @@ class _QuizScoreScreenState extends State<QuizScoreScreen> {
         child: _loading
             ? const Center(child: CircularProgressIndicator())
             : _error != null
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.error_outline, size: 40, color: scheme.error),
-                          const SizedBox(height: 12),
-                          Text(_error!, textAlign: TextAlign.center),
-                          const SizedBox(height: 16),
-                          OutlinedButton(onPressed: _load, child: const Text('Retry')),
-                        ],
-                      ),
-                    ),
-                  )
+                ? ErrorState(error: _error!, onRetry: _load)
                 : (_data == null || _data!['success'] != true)
                     ? Center(
                         child: Padding(

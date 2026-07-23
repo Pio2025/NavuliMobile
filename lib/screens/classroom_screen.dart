@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/error_state.dart';
 import 'classroom_form_screen.dart';
 import 'classroom_listing_screen.dart';
 
@@ -118,7 +119,7 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
         child: _loading
             ? const Center(child: CircularProgressIndicator())
             : _error != null
-                ? Center(child: Text('Failed to load: $_error'))
+                ? ErrorState(error: _error!, onRetry: _load)
                 : GridView.count(
                     padding: const EdgeInsets.all(20),
                     crossAxisCount: 2,

@@ -6,7 +6,9 @@ import 'package:provider/provider.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_snackbar.dart';
 import '../widgets/classroom_card.dart';
+import '../widgets/error_state.dart';
 import 'classroom_detail_screen.dart';
 import 'classroom_full_detail_screen.dart';
 
@@ -186,7 +188,7 @@ class _ClassroomListingScreenState extends State<ClassroomListingScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _tableLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      AppSnackbar.error(context, friendlyErrorMessage(e));
     }
   }
 
@@ -294,12 +296,7 @@ class _ClassroomListingScreenState extends State<ClassroomListingScreen> {
     if (result is Map && result['deleted'] == true) {
       await _loadFirstPage();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Classroom deleted successfully.', style: TextStyle(color: Colors.white)),
-          backgroundColor: AppColors.success,
-        ),
-      );
+      AppSnackbar.success(context, 'Classroom deleted successfully.');
     } else if (result == true) {
       _loadFirstPage();
     }
@@ -423,12 +420,7 @@ class _ClassroomListingScreenState extends State<ClassroomListingScreen> {
   Widget _buildBody() {
     if (_loading) return const Center(child: CircularProgressIndicator());
     if (_error != null) {
-      return ListView(
-        children: [
-          const SizedBox(height: 120),
-          Center(child: Text('Failed to load classrooms: $_error')),
-        ],
-      );
+      return ErrorState(error: _error!, onRetry: _loadFirstPage);
     }
     switch (_viewMode) {
       case ClassroomViewMode.card:

@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_snackbar.dart';
 
 num _asNum(dynamic v) => (v is num) ? v : (num.tryParse('$v') ?? 0);
 
@@ -51,11 +52,11 @@ Future<void> _openUrl(BuildContext context, String url) async {
   try {
     final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!ok && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not open file.')));
+      AppSnackbar.error(context, 'Could not open file.');
     }
   } catch (_) {
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not open file.')));
+      AppSnackbar.error(context, 'Could not open file.');
     }
   }
 }

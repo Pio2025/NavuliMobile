@@ -9,6 +9,7 @@ import 'package:printing/printing.dart';
 
 import '../config/api_config.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_snackbar.dart';
 
 String _grade(double pct) {
   if (pct >= 90) return 'A+';
@@ -93,7 +94,7 @@ class _ExamReportCardScreenState extends State<ExamReportCardScreen> {
   Future<Uint8List?> _fetchBytes(String url) async {
     if (url.isEmpty) return null;
     try {
-      final res = await http.get(Uri.parse(url));
+      final res = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 8));
       if (res.statusCode == 200) return res.bodyBytes;
     } catch (_) {}
     return null;
@@ -103,7 +104,7 @@ class _ExamReportCardScreenState extends State<ExamReportCardScreen> {
     if (_generatingPdf) return;
     setState(() => _generatingPdf = true);
     try {
-      final bytes = await _buildPdf();
+      final bytes = await _buildPdf().timeout(const Duration(seconds: 25));
       if (!mounted) return;
       await Printing.sharePdf(
         bytes: bytes,
@@ -111,7 +112,7 @@ class _ExamReportCardScreenState extends State<ExamReportCardScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not generate PDF: $e')));
+      AppSnackbar.error(context, 'Could not generate the PDF. Please check your connection and try again.');
     } finally {
       if (mounted) setState(() => _generatingPdf = false);
     }

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/error_state.dart';
 import '../widgets/stat_card.dart';
 
 /// Full dashboard — the detailed breakdown behind the Home screen's
@@ -53,12 +54,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               return const Center(child: CircularProgressIndicator());
             }
             if (snapshot.hasError) {
-              return ListView(
-                children: [
-                  const SizedBox(height: 120),
-                  Center(child: Text('Failed to load dashboard: ${snapshot.error}')),
-                ],
-              );
+              return ErrorState(error: snapshot.error!, onRetry: _refresh);
             }
 
             final data = snapshot.data!;

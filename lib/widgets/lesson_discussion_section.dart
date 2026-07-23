@@ -9,6 +9,8 @@ import '../services/api_client.dart';
 import '../services/lesson_discussion_realtime.dart';
 import '../theme/app_theme.dart';
 import '../utils/time_ago.dart';
+import 'app_snackbar.dart';
+import 'error_state.dart' show friendlyErrorMessage;
 
 int _asInt(dynamic v) => v is num ? v.toInt() : (int.tryParse('$v') ?? 0);
 
@@ -207,7 +209,7 @@ class _LessonDiscussionSectionState extends State<LessonDiscussionSection> {
     } catch (e) {
       setState(() => _posting = false);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      AppSnackbar.error(context, friendlyErrorMessage(e));
     }
   }
 
@@ -222,7 +224,7 @@ class _LessonDiscussionSectionState extends State<LessonDiscussionSection> {
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      AppSnackbar.error(context, friendlyErrorMessage(e));
     }
   }
 
@@ -603,7 +605,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
     } catch (e) {
       setState(() => _sendingComment = false);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      AppSnackbar.error(context, friendlyErrorMessage(e));
     }
   }
 
@@ -625,7 +627,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
     } catch (e) {
       setState(() => _sendingReply = false);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      AppSnackbar.error(context, friendlyErrorMessage(e));
     }
   }
 
@@ -647,7 +649,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
     } catch (e) {
       setState(() => _sendingReply = false);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      AppSnackbar.error(context, friendlyErrorMessage(e));
     }
   }
 
@@ -662,7 +664,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      AppSnackbar.error(context, friendlyErrorMessage(e));
     }
   }
 
@@ -677,7 +679,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      AppSnackbar.error(context, friendlyErrorMessage(e));
     }
   }
 

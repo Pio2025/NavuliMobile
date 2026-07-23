@@ -6,6 +6,8 @@ import '../config/api_config.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_snackbar.dart';
+import '../widgets/error_state.dart';
 import 'assignment_score_screen.dart';
 import 'lesson_day_view_screen.dart';
 
@@ -467,7 +469,7 @@ class _SubjectDashboardScreenState extends State<SubjectDashboardScreen> {
 
   Widget _buildBody() {
     if (_loading) return const Center(child: CircularProgressIndicator());
-    if (_error != null) return Center(child: Text('Failed to load dashboard: $_error'));
+    if (_error != null) return ErrorState(error: _error!, onRetry: _load);
 
     final avgScore = _stats['avg_score'];
     final needAttention = _asNum(_stats['need_attention']);
@@ -776,7 +778,9 @@ class _SubjectLessonsScreenState extends State<SubjectLessonsScreen> {
 
   Widget _buildBody() {
     if (_loading) return const Center(child: CircularProgressIndicator());
-    if (_error != null) return Center(child: Text('Failed to load lessons: $_error'));
+    if (_error != null) {
+      return ErrorState(error: _error!, onRetry: () => _load(term: _selectedTerm == 0 ? null : _selectedTerm));
+    }
     if (_terms.isEmpty) {
       return RefreshIndicator(
         onRefresh: () => _load(term: _selectedTerm == 0 ? null : _selectedTerm),
@@ -975,7 +979,7 @@ class _SubjectAssignmentsScreenState extends State<SubjectAssignmentsScreen> {
 
   Widget _buildBody() {
     if (_loading) return const Center(child: CircularProgressIndicator());
-    if (_error != null) return Center(child: Text('Failed to load assignments: $_error'));
+    if (_error != null) return ErrorState(error: _error!, onRetry: _load);
     final mode = '${_body['mode'] ?? ''}';
     return RefreshIndicator(
       onRefresh: _load,
@@ -1081,9 +1085,7 @@ class _SubjectFeedbackScreenState extends State<SubjectFeedbackScreen> {
 
   Future<void> _submit() async {
     if (_overall < 1) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please give an overall rating.')),
-      );
+      AppSnackbar.warning(context, 'Please give an overall rating.');
       return;
     }
     setState(() => _submitting = true);
@@ -1098,13 +1100,11 @@ class _SubjectFeedbackScreenState extends State<SubjectFeedbackScreen> {
         isAnonymous: _anonymous,
       );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Thank you for your feedback!')),
-      );
+      AppSnackbar.success(context, 'Thank you for your feedback!');
       await _load();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      AppSnackbar.error(context, friendlyErrorMessage(e));
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -1304,7 +1304,7 @@ class _SubjectFeedbackScreenState extends State<SubjectFeedbackScreen> {
 
   Widget _buildBody() {
     if (_loading) return const Center(child: CircularProgressIndicator());
-    if (_error != null) return Center(child: Text('Failed to load feedback: $_error'));
+    if (_error != null) return ErrorState(error: _error!, onRetry: _load);
     final mode = '${_body['mode'] ?? ''}';
     return RefreshIndicator(
       onRefresh: _load,

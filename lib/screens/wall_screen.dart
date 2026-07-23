@@ -9,6 +9,8 @@ import '../models/wall_post.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_snackbar.dart';
+import '../widgets/error_state.dart';
 import '../widgets/school_tab_bar.dart';
 
 class WallScreen extends StatefulWidget {
@@ -131,8 +133,7 @@ class _WallScreenState extends State<WallScreen> {
     } catch (e) {
       setState(() => _posting = false);
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('$e')));
+      AppSnackbar.error(context, friendlyErrorMessage(e));
     }
   }
 
@@ -164,8 +165,7 @@ class _WallScreenState extends State<WallScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('$e')));
+      AppSnackbar.error(context, friendlyErrorMessage(e));
     }
   }
 
@@ -219,12 +219,7 @@ class _WallScreenState extends State<WallScreen> {
         child: _loading
             ? const Center(child: CircularProgressIndicator())
             : _error != null
-                ? ListView(
-                    children: [
-                      const SizedBox(height: 120),
-                      Center(child: Text('Failed to load wall: $_error')),
-                    ],
-                  )
+                ? ErrorState(error: _error!, onRetry: _loadFirstPage)
                 : NotificationListener<ScrollNotification>(
                     onNotification: (n) {
                       if (n.metrics.pixels >=
@@ -580,8 +575,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
     } catch (e) {
       setState(() => _sending = false);
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('$e')));
+      AppSnackbar.error(context, friendlyErrorMessage(e));
     }
   }
 
@@ -624,7 +618,10 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                     return const Center(child: CircularProgressIndicator());
                   }
                   if (snapshot.hasError) {
-                    return Center(child: Text('Failed to load comments: ${snapshot.error}'));
+                    return ErrorState(
+                      error: snapshot.error!,
+                      onRetry: () => setState(() => _future = _load()),
+                    );
                   }
                   if (_comments.isEmpty) {
                     return Center(

@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../widgets/announcement_card.dart';
+import '../widgets/app_snackbar.dart';
+import '../widgets/error_state.dart';
 import '../widgets/school_tab_bar.dart';
 import 'announcement_detail_screen.dart';
 import 'announcement_form_screen.dart';
@@ -119,7 +121,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
       setState(() => _items.removeWhere((a) => a['id'] == announcement['id']));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      AppSnackbar.error(context, friendlyErrorMessage(e));
     }
   }
 
@@ -166,14 +168,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
           child: _loading
               ? const Center(child: CircularProgressIndicator())
               : _error != null
-                  ? ListView(
-                      children: [
-                        const SizedBox(height: 120),
-                        Center(
-                          child: Text('Failed to load announcements: $_error'),
-                        ),
-                      ],
-                    )
+                  ? ErrorState(error: _error!, onRetry: _loadFirstPage)
                   : NotificationListener<ScrollNotification>(
                       onNotification: (n) {
                         if (n.metrics.pixels >= n.metrics.maxScrollExtent - 200) {

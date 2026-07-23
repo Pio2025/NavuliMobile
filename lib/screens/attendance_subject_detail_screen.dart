@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/error_state.dart';
 
 class AttendanceSubjectDetailScreen extends StatefulWidget {
   final int classId;
@@ -218,7 +219,7 @@ class _AttendanceSubjectDetailScreenState extends State<AttendanceSubjectDetailS
         child: _loading
             ? const Center(child: CircularProgressIndicator())
             : _error != null
-                ? Center(child: Text('Failed to load attendance: $_error'))
+                ? ErrorState(error: _error!, onRetry: _load)
                 : RefreshIndicator(
                     onRefresh: _load,
                     child: ListView(

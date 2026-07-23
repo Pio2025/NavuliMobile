@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
+import '../widgets/app_snackbar.dart';
+import '../widgets/error_state.dart';
 import '../widgets/notice_card.dart';
 import '../widgets/school_tab_bar.dart';
 import 'notice_detail_screen.dart';
@@ -105,7 +107,7 @@ class _NoticesScreenState extends State<NoticesScreen> {
       if (index != -1) setState(() => _notices[index] = updated);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      AppSnackbar.error(context, friendlyErrorMessage(e));
     }
   }
 
@@ -132,7 +134,7 @@ class _NoticesScreenState extends State<NoticesScreen> {
       setState(() => _notices.removeWhere((n) => n['id'] == notice['id']));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      AppSnackbar.error(context, friendlyErrorMessage(e));
     }
   }
 
@@ -185,12 +187,7 @@ class _NoticesScreenState extends State<NoticesScreen> {
           child: _loading
               ? const Center(child: CircularProgressIndicator())
               : _error != null
-                  ? ListView(
-                      children: [
-                        const SizedBox(height: 120),
-                        Center(child: Text('Failed to load notices: $_error')),
-                      ],
-                    )
+                  ? ErrorState(error: _error!, onRetry: _loadFirstPage)
                   : NotificationListener<ScrollNotification>(
                       onNotification: (n) {
                         if (n.metrics.pixels >= n.metrics.maxScrollExtent - 200) {

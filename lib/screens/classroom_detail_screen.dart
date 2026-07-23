@@ -3,8 +3,9 @@ import 'package:provider/provider.dart';
 
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
-import '../theme/app_theme.dart';
+import '../widgets/app_snackbar.dart';
 import '../widgets/classroom_overview_body.dart';
+import '../widgets/error_state.dart';
 import 'classroom_captains_screen.dart';
 import 'classroom_form_screen.dart';
 import 'classroom_students_screen.dart';
@@ -118,12 +119,7 @@ class _ClassroomDetailScreenState extends State<ClassroomDetailScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _busy = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('$e', style: const TextStyle(color: Colors.white)),
-          backgroundColor: AppColors.danger,
-        ),
-      );
+      AppSnackbar.error(context, friendlyErrorMessage(e));
     }
   }
 
@@ -165,7 +161,7 @@ class _ClassroomDetailScreenState extends State<ClassroomDetailScreen> {
           child: _loading
               ? const Center(child: CircularProgressIndicator())
               : _error != null
-                  ? Center(child: Text('Failed to load classroom: $_error'))
+                  ? ErrorState(error: _error!, onRetry: _load)
                   : Stack(
                       children: [
                         RefreshIndicator(

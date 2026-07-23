@@ -6,6 +6,7 @@ import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/time_ago.dart';
+import '../widgets/error_state.dart';
 
 class ClassroomDiscussionScreen extends StatefulWidget {
   final int classId;
@@ -208,7 +209,7 @@ class _ClassroomDiscussionScreenState extends State<ClassroomDiscussionScreen> {
         child: _loading
             ? const Center(child: CircularProgressIndicator())
             : _error != null
-                ? Center(child: Text('Failed to load discussion: $_error'))
+                ? ErrorState(error: _error!, onRetry: _load)
                 : _posts.isEmpty
                     ? RefreshIndicator(
                         onRefresh: _load,

@@ -5,6 +5,7 @@ import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/announcement_card.dart';
+import '../widgets/error_state.dart';
 import '../widgets/notice_card.dart';
 import '../widgets/stat_card.dart';
 import 'announcement_detail_screen.dart';
@@ -117,12 +118,7 @@ class _HomeScreenState extends State<HomeScreen> {
               return const Center(child: CircularProgressIndicator());
             }
             if (snapshot.hasError) {
-              return ListView(
-                children: [
-                  const SizedBox(height: 120),
-                  Center(child: Text('Failed to load: ${snapshot.error}')),
-                ],
-              );
+              return ErrorState(error: snapshot.error!, onRetry: _refresh);
             }
 
             final data = snapshot.data!;

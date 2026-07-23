@@ -5,6 +5,7 @@ import '../config/api_config.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/error_state.dart';
 
 class ClassroomStudentsScreen extends StatefulWidget {
   final int classId;
@@ -102,7 +103,7 @@ class _ClassroomStudentsScreenState extends State<ClassroomStudentsScreen> {
         child: _loading
             ? const Center(child: CircularProgressIndicator())
             : _error != null
-                ? Center(child: Text('Failed to load students: $_error'))
+                ? ErrorState(error: _error!, onRetry: _loadFirstPage)
                 : _students.isEmpty
                     ? RefreshIndicator(
                         onRefresh: _loadFirstPage,

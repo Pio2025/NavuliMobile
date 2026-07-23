@@ -5,6 +5,7 @@ import '../config/api_config.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/error_state.dart';
 import 'subject_dashboard_screen.dart';
 
 class ClassroomSubjectsScreen extends StatefulWidget {
@@ -139,7 +140,7 @@ class _ClassroomSubjectsScreenState extends State<ClassroomSubjectsScreen> {
         child: _loading
             ? const Center(child: CircularProgressIndicator())
             : _error != null
-                ? Center(child: Text('Failed to load subjects: $_error'))
+                ? ErrorState(error: _error!, onRetry: _load)
                 : RefreshIndicator(
                     onRefresh: _load,
                     child: ListView(
