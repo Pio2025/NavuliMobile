@@ -76,8 +76,9 @@ Future<void> _openUrl(BuildContext context, String url) async {
 class LessonDetailContent extends StatefulWidget {
   final int lessonId;
   final String? classroomName;
+  final int? childId;
 
-  const LessonDetailContent({super.key, required this.lessonId, this.classroomName});
+  const LessonDetailContent({super.key, required this.lessonId, this.classroomName, this.childId});
 
   @override
   State<LessonDetailContent> createState() => _LessonDetailContentState();
@@ -367,7 +368,7 @@ class _LessonDetailContentState extends State<LessonDetailContent> {
                 icon: Icon(Icons.arrow_drop_down_circle_outlined, size: 18, color: scheme.onSurfaceVariant),
                 onSelected: (value) {
                   Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => QuizScoreScreen(quizId: quizId, quizName: quizName, autoDownload: value == 'download'),
+                    builder: (_) => QuizScoreScreen(quizId: quizId, quizName: quizName, autoDownload: value == 'download', childId: widget.childId),
                   ));
                 },
                 itemBuilder: (_) => const [

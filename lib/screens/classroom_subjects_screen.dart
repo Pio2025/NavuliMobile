@@ -119,6 +119,7 @@ class _ClassroomSubjectsScreenState extends State<ClassroomSubjectsScreen> {
                   builder: (_) => SubjectDashboardScreen(
                     subject: s,
                     classroomName: widget.classroomName,
+                    childId: widget.childId,
                   ),
                 ),
               ),

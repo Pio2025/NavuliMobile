@@ -25,6 +25,7 @@ class LessonDayViewScreen extends StatelessWidget {
   final bool isHoliday;
   final String? holidayName;
   final List<Map<String, dynamic>> lessons;
+  final int? childId;
 
   const LessonDayViewScreen({
     super.key,
@@ -36,6 +37,7 @@ class LessonDayViewScreen extends StatelessWidget {
     required this.isHoliday,
     required this.holidayName,
     required this.lessons,
+    this.childId,
   });
 
   Widget _banner(BuildContext context) {
@@ -76,7 +78,7 @@ class LessonDayViewScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          LessonDetailContent(lessonId: lessonId, classroomName: classroomName),
+          LessonDetailContent(lessonId: lessonId, classroomName: classroomName, childId: childId),
           if (showDivider) const Padding(padding: EdgeInsets.only(top: 20), child: Divider(height: 1)),
         ],
       ),

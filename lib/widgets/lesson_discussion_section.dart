@@ -34,7 +34,9 @@ class _ReactionsSheet extends StatelessWidget {
         color: Theme.of(context).scaffoldBackgroundColor,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      child: Column(
+      child: SafeArea(
+        top: false,
+        child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           const SizedBox(height: 10),
@@ -103,6 +105,7 @@ class _ReactionsSheet extends StatelessWidget {
           ),
           const SizedBox(height: 12),
         ],
+        ),
       ),
     );
   }

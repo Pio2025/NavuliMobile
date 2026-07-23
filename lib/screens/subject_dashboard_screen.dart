@@ -15,20 +15,20 @@ num _asNum(dynamic v) => (v is num) ? v : (num.tryParse('$v') ?? 0);
 
 int _classSubIdOf(Map<String, dynamic> subject) => _asNum(subject['class_sub_id']).toInt();
 
-void _switchSection(BuildContext context, Map<String, dynamic> subject, _Section target, {String? classroomName}) {
+void _switchSection(BuildContext context, Map<String, dynamic> subject, _Section target, {String? classroomName, int? childId}) {
   Widget screen;
   switch (target) {
     case _Section.dashboard:
-      screen = SubjectDashboardScreen(subject: subject, classroomName: classroomName);
+      screen = SubjectDashboardScreen(subject: subject, classroomName: classroomName, childId: childId);
       break;
     case _Section.lessons:
-      screen = SubjectLessonsScreen(subject: subject, classroomName: classroomName);
+      screen = SubjectLessonsScreen(subject: subject, classroomName: classroomName, childId: childId);
       break;
     case _Section.assignments:
-      screen = SubjectAssignmentsScreen(subject: subject, classroomName: classroomName);
+      screen = SubjectAssignmentsScreen(subject: subject, classroomName: classroomName, childId: childId);
       break;
     case _Section.feedback:
-      screen = SubjectFeedbackScreen(subject: subject, classroomName: classroomName);
+      screen = SubjectFeedbackScreen(subject: subject, classroomName: classroomName, childId: childId);
       break;
   }
   Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => screen));
@@ -85,14 +85,14 @@ Widget _sectionBanner(
   );
 }
 
-List<Widget> _sectionActions(BuildContext context, Map<String, dynamic> subject, _Section current, {String? classroomName}) {
+List<Widget> _sectionActions(BuildContext context, Map<String, dynamic> subject, _Section current, {String? classroomName, int? childId}) {
   final scheme = Theme.of(context).colorScheme;
   Widget action(_Section section, IconData icon, String tooltip) {
     final active = section == current;
     return IconButton(
       icon: Icon(icon, color: active ? AppColors.primary : scheme.onSurfaceVariant),
       tooltip: tooltip,
-      onPressed: active ? null : () => _switchSection(context, subject, section, classroomName: classroomName),
+      onPressed: active ? null : () => _switchSection(context, subject, section, classroomName: classroomName, childId: childId),
     );
   }
 
@@ -151,7 +151,8 @@ Widget _emptyHint(BuildContext context, String text) {
 class SubjectDashboardScreen extends StatefulWidget {
   final Map<String, dynamic> subject;
   final String? classroomName;
-  const SubjectDashboardScreen({super.key, required this.subject, this.classroomName});
+  final int? childId;
+  const SubjectDashboardScreen({super.key, required this.subject, this.classroomName, this.childId});
 
   @override
   State<SubjectDashboardScreen> createState() => _SubjectDashboardScreenState();
@@ -530,7 +531,7 @@ class _SubjectDashboardScreenState extends State<SubjectDashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        actions: _sectionActions(context, widget.subject, _Section.dashboard, classroomName: widget.classroomName),
+        actions: _sectionActions(context, widget.subject, _Section.dashboard, classroomName: widget.classroomName, childId: widget.childId),
       ),
       body: SafeArea(
         top: false,
@@ -559,7 +560,8 @@ String _formatCardDate(String isoDate) {
 class SubjectLessonsScreen extends StatefulWidget {
   final Map<String, dynamic> subject;
   final String? classroomName;
-  const SubjectLessonsScreen({super.key, required this.subject, this.classroomName});
+  final int? childId;
+  const SubjectLessonsScreen({super.key, required this.subject, this.classroomName, this.childId});
 
   @override
   State<SubjectLessonsScreen> createState() => _SubjectLessonsScreenState();
@@ -617,6 +619,7 @@ class _SubjectLessonsScreenState extends State<SubjectLessonsScreen> {
           isHoliday: day['isHoliday'] == true,
           holidayName: day['holidayName'] as String?,
           lessons: List<Map<String, dynamic>>.from(day['lessons'] ?? []),
+          childId: widget.childId,
         ),
       ),
     );
@@ -805,7 +808,7 @@ class _SubjectLessonsScreenState extends State<SubjectLessonsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        actions: _sectionActions(context, widget.subject, _Section.lessons, classroomName: widget.classroomName),
+        actions: _sectionActions(context, widget.subject, _Section.lessons, classroomName: widget.classroomName, childId: widget.childId),
       ),
       body: SafeArea(
         top: false,
@@ -825,7 +828,8 @@ class _SubjectLessonsScreenState extends State<SubjectLessonsScreen> {
 class SubjectAssignmentsScreen extends StatefulWidget {
   final Map<String, dynamic> subject;
   final String? classroomName;
-  const SubjectAssignmentsScreen({super.key, required this.subject, this.classroomName});
+  final int? childId;
+  const SubjectAssignmentsScreen({super.key, required this.subject, this.classroomName, this.childId});
 
   @override
   State<SubjectAssignmentsScreen> createState() => _SubjectAssignmentsScreenState();
@@ -974,7 +978,7 @@ class _SubjectAssignmentsScreenState extends State<SubjectAssignmentsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        actions: _sectionActions(context, widget.subject, _Section.assignments, classroomName: widget.classroomName),
+        actions: _sectionActions(context, widget.subject, _Section.assignments, classroomName: widget.classroomName, childId: widget.childId),
       ),
       body: SafeArea(
         top: false,
@@ -994,7 +998,8 @@ class _SubjectAssignmentsScreenState extends State<SubjectAssignmentsScreen> {
 class SubjectFeedbackScreen extends StatefulWidget {
   final Map<String, dynamic> subject;
   final String? classroomName;
-  const SubjectFeedbackScreen({super.key, required this.subject, this.classroomName});
+  final int? childId;
+  const SubjectFeedbackScreen({super.key, required this.subject, this.classroomName, this.childId});
 
   @override
   State<SubjectFeedbackScreen> createState() => _SubjectFeedbackScreenState();
@@ -1278,7 +1283,7 @@ class _SubjectFeedbackScreenState extends State<SubjectFeedbackScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        actions: _sectionActions(context, widget.subject, _Section.feedback, classroomName: widget.classroomName),
+        actions: _sectionActions(context, widget.subject, _Section.feedback, classroomName: widget.classroomName, childId: widget.childId),
       ),
       body: SafeArea(
         top: false,

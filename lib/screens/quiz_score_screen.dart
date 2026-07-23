@@ -17,8 +17,9 @@ class QuizScoreScreen extends StatefulWidget {
   final int quizId;
   final String quizName;
   final bool autoDownload;
+  final int? childId;
 
-  const QuizScoreScreen({super.key, required this.quizId, required this.quizName, this.autoDownload = false});
+  const QuizScoreScreen({super.key, required this.quizId, required this.quizName, this.autoDownload = false, this.childId});
 
   @override
   State<QuizScoreScreen> createState() => _QuizScoreScreenState();
@@ -44,7 +45,7 @@ class _QuizScoreScreenState extends State<QuizScoreScreen> {
       _error = null;
     });
     try {
-      final body = await _client.getLessonQuizScore(widget.quizId);
+      final body = await _client.getLessonQuizScore(widget.quizId, childId: widget.childId);
       setState(() {
         _data = body;
         _loading = false;
