@@ -99,46 +99,48 @@ class _QuizScoreScreenState extends State<QuizScoreScreen> {
             ),
         ],
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.error_outline, size: 40, color: scheme.error),
-                        const SizedBox(height: 12),
-                        Text(_error!, textAlign: TextAlign.center),
-                        const SizedBox(height: 16),
-                        OutlinedButton(onPressed: _load, child: const Text('Retry')),
-                      ],
-                    ),
-                  ),
-                )
-              : (_data == null || _data!['success'] != true)
-                  ? Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.quiz_outlined, size: 48, color: scheme.onSurfaceVariant),
-                            const SizedBox(height: 12),
-                            Text(
-                              '${_data?['message'] ?? 'No completed attempt found.'}',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(color: scheme.onSurfaceVariant),
-                            ),
-                          ],
-                        ),
+      body: SafeArea(
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : _error != null
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.error_outline, size: 40, color: scheme.error),
+                          const SizedBox(height: 12),
+                          Text(_error!, textAlign: TextAlign.center),
+                          const SizedBox(height: 16),
+                          OutlinedButton(onPressed: _load, child: const Text('Retry')),
+                        ],
                       ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _load,
-                      child: _scoreBody(scheme),
                     ),
+                  )
+                : (_data == null || _data!['success'] != true)
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.quiz_outlined, size: 48, color: scheme.onSurfaceVariant),
+                              const SizedBox(height: 12),
+                              Text(
+                                '${_data?['message'] ?? 'No completed attempt found.'}',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: scheme.onSurfaceVariant),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    : RefreshIndicator(
+                        onRefresh: _load,
+                        child: _scoreBody(scheme),
+                      ),
+      ),
     );
   }
 
@@ -480,35 +482,40 @@ pw.Widget _questionBlock(int index, Map<String, dynamic> q, List<String> letters
 
   return pw.Container(
     margin: const pw.EdgeInsets.only(bottom: 12),
-    padding: const pw.EdgeInsets.all(10),
     decoration: pw.BoxDecoration(
-      border: pw.Border(
-        top: const pw.BorderSide(color: PdfColors.grey300),
-        right: const pw.BorderSide(color: PdfColors.grey300),
-        bottom: const pw.BorderSide(color: PdfColors.grey300),
-        left: pw.BorderSide(color: borderColor, width: 3),
-      ),
+      border: pw.Border.all(color: PdfColors.grey300),
       borderRadius: pw.BorderRadius.circular(4),
     ),
-    child: pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
+    child: pw.Row(
+      crossAxisAlignment: pw.CrossAxisAlignment.stretch,
       children: [
-        pw.Row(children: [
-          pw.Container(
-            padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: const pw.BoxDecoration(color: PdfColors.blue400, borderRadius: pw.BorderRadius.all(pw.Radius.circular(3))),
-            child: pw.Text('Q$index', style: const pw.TextStyle(fontSize: 9, color: PdfColors.white, fontWeight: pw.FontWeight.bold)),
+        pw.Container(width: 3, color: borderColor),
+        pw.Expanded(
+          child: pw.Padding(
+            padding: const pw.EdgeInsets.all(10),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Row(children: [
+                  pw.Container(
+                    padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: const pw.BoxDecoration(color: PdfColors.blue400, borderRadius: pw.BorderRadius.all(pw.Radius.circular(3))),
+                    child: pw.Text('Q$index', style: const pw.TextStyle(fontSize: 9, color: PdfColors.white, fontWeight: pw.FontWeight.bold)),
+                  ),
+                  pw.SizedBox(width: 8),
+                  pw.Text(
+                    !isAnswered ? 'Not Answered' : (isCorrect ? 'Correct' : 'Incorrect'),
+                    style: pw.TextStyle(fontSize: 9, color: !isAnswered ? PdfColors.grey600 : (isCorrect ? PdfColors.green700 : PdfColors.red700)),
+                  ),
+                ]),
+                pw.SizedBox(height: 6),
+                pw.Text('${q['question'] ?? ''}', style: const pw.TextStyle(fontSize: 11)),
+                pw.SizedBox(height: 6),
+                for (var ai = 0; ai < answers.length; ai++) _answerLine(ai, answers[ai], letters),
+              ],
+            ),
           ),
-          pw.SizedBox(width: 8),
-          pw.Text(
-            !isAnswered ? 'Not Answered' : (isCorrect ? 'Correct' : 'Incorrect'),
-            style: pw.TextStyle(fontSize: 9, color: !isAnswered ? PdfColors.grey600 : (isCorrect ? PdfColors.green700 : PdfColors.red700)),
-          ),
-        ]),
-        pw.SizedBox(height: 6),
-        pw.Text('${q['question'] ?? ''}', style: const pw.TextStyle(fontSize: 11)),
-        pw.SizedBox(height: 6),
-        for (var ai = 0; ai < answers.length; ai++) _answerLine(ai, answers[ai], letters),
+        ),
       ],
     ),
   );
