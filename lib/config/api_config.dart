@@ -21,6 +21,21 @@ class ApiConfig {
   static String classroomStaffUrl(int id) => '$baseUrl/api/classroom/$id/staff';
   static String classroomStudentsUrl(int id) => '$baseUrl/api/classroom/$id/students';
   static String classroomAttendanceUrl(int id) => '$baseUrl/api/classroom/$id/attendance';
+  static String classroomAttendanceTermsUrl(int id) => '$baseUrl/api/classroom/$id/attendance/terms';
+  static String classroomAttendanceDailyUrl(int id, {int? term, int? childId}) {
+    final params = <String>[];
+    if (term != null) params.add('term=$term');
+    if (childId != null) params.add('childId=$childId');
+    final qs = params.isEmpty ? '' : '?${params.join('&')}';
+    return '$baseUrl/api/classroom/$id/attendance/daily$qs';
+  }
+  static String classroomAttendanceSubjectUrl(int id, {int? term, int? childId}) {
+    final params = <String>[];
+    if (term != null) params.add('term=$term');
+    if (childId != null) params.add('childId=$childId');
+    final qs = params.isEmpty ? '' : '?${params.join('&')}';
+    return '$baseUrl/api/classroom/$id/attendance/subject$qs';
+  }
   static String classroomExamUrl(int id) => '$baseUrl/api/classroom/$id/exam';
   static String classroomDiscussionUrl(int id) => '$baseUrl/api/classroom/$id/discussion';
   static String subjectDashboardUrl(int classSubId) => '$baseUrl/api/classroom/subject/$classSubId/dashboard';

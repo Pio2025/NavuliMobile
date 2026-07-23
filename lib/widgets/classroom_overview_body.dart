@@ -177,26 +177,27 @@ class ClassroomOverviewBody extends StatelessWidget {
           Center(
             child: Column(
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
+                Container(
+                  width: 68,
+                  height: 68,
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.4)),
+                  ),
                   child: schoolLogo.isNotEmpty
                       ? Image.network(
                           ApiConfig.schoolLogoUrl(schoolLogo),
-                          width: 64,
-                          height: 64,
-                          fit: BoxFit.cover,
+                          fit: BoxFit.contain,
                           errorBuilder: (context, error, stack) => Image.asset(
                             'assets/images/icon.png',
-                            width: 64,
-                            height: 64,
-                            fit: BoxFit.cover,
+                            fit: BoxFit.contain,
                           ),
                         )
                       : Image.asset(
                           'assets/images/icon.png',
-                          width: 64,
-                          height: 64,
-                          fit: BoxFit.cover,
+                          fit: BoxFit.contain,
                         ),
                 ),
                 const SizedBox(height: 8),
