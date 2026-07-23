@@ -20,6 +20,7 @@ class _ClassroomExamScreenState extends State<ClassroomExamScreen> {
   String? _error;
   Map<String, dynamic> _body = {};
   int _term = 1;
+  List<int> _termNums = [1, 2, 3];
 
   @override
   void initState() {
@@ -35,8 +36,21 @@ class _ClassroomExamScreenState extends State<ClassroomExamScreen> {
     });
     try {
       final body = await _client.getClassroomExam(widget.classId);
+      final mode = '${body['mode'] ?? ''}';
+      Map<String, dynamic> termsSource;
+      if (mode == 'children') {
+        final children = List<Map<String, dynamic>>.from(body['children'] ?? []);
+        termsSource = children.isNotEmpty ? _termsAt(children.first) : {};
+      } else {
+        termsSource = _termsAt(body);
+      }
+      final terms = termsSource.keys.map(int.parse).toList()..sort();
       setState(() {
         _body = body;
+        if (terms.isNotEmpty) {
+          _termNums = terms;
+          if (!_termNums.contains(_term)) _term = _termNums.first;
+        }
         _loading = false;
       });
     } catch (e) {
@@ -53,14 +67,15 @@ class _ClassroomExamScreenState extends State<ClassroomExamScreen> {
   }
 
   Widget _termSelector() {
+    final label = '${_body['termLabel'] ?? 'Term'}';
     return Row(
       children: [
-        for (final t in [1, 2, 3])
+        for (final t in _termNums)
           Expanded(
             child: Padding(
-              padding: EdgeInsets.only(right: t == 3 ? 0 : 8),
+              padding: EdgeInsets.only(right: t == _termNums.last ? 0 : 8),
               child: ChoiceChip(
-                label: Text('Term $t'),
+                label: Text('$label $t'),
                 selected: _term == t,
                 onSelected: (_) => setState(() => _term = t),
               ),
