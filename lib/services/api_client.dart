@@ -666,6 +666,17 @@ class ApiClient {
     return body;
   }
 
+  Future<Map<String, dynamic>> getLessonQuizScore(int quizId) async {
+    final res = await http
+        .get(Uri.parse(ApiConfig.lessonQuizScoreUrl(quizId)), headers: auth.authHeaders)
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200) {
+      throw Exception(body['message'] ?? 'Failed to load quiz score.');
+    }
+    return body;
+  }
+
   Future<Map<String, dynamic>> postLessonDiscussion(
     int lessonId, {
     String message = '',

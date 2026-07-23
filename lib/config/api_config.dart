@@ -29,6 +29,7 @@ class ApiConfig {
   static String subjectFeedbackUrl(int classSubId) => '$baseUrl/api/classroom/subject/$classSubId/feedback';
 
   static String lessonDetailUrl(int lessonId) => '$baseUrl/api/classroom/lesson/$lessonId';
+  static String lessonQuizScoreUrl(int quizId) => '$baseUrl/api/classroom/lesson/quiz/$quizId/score';
   static String lessonDiscussionPostUrl(int lessonId) => '$baseUrl/api/classroom/lesson/$lessonId/discussion';
   static String lessonDiscussionLikeUrl(int discussionId) => '$baseUrl/api/classroom/lesson/discussion/$discussionId/like';
   static String lessonDiscussionReactionsUrl(int discussionId) => '$baseUrl/api/classroom/lesson/discussion/$discussionId/reactions';

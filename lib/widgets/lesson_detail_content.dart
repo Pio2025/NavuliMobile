@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../config/api_config.dart';
+import '../screens/quiz_score_screen.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
@@ -345,6 +346,8 @@ class _LessonDetailContentState extends State<LessonDetailContent> {
   }
 
   Widget _assessmentTile(ColorScheme scheme, Map<String, dynamic> a) {
+    final quizId = (a['id'] is num) ? (a['id'] as num).toInt() : (int.tryParse('${a['id']}') ?? 0);
+    final quizName = '${a['name'] ?? ''}';
     return Container(
       width: 130,
       padding: const EdgeInsets.all(10),
@@ -355,10 +358,28 @@ class _LessonDetailContentState extends State<LessonDetailContent> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.quiz_outlined, color: AppColors.primary, size: 28),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Icon(Icons.quiz_outlined, color: AppColors.primary, size: 28),
+              PopupMenuButton<String>(
+                padding: EdgeInsets.zero,
+                icon: Icon(Icons.arrow_drop_down_circle_outlined, size: 18, color: scheme.onSurfaceVariant),
+                onSelected: (value) {
+                  Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => QuizScoreScreen(quizId: quizId, quizName: quizName, autoDownload: value == 'download'),
+                  ));
+                },
+                itemBuilder: (_) => const [
+                  PopupMenuItem(value: 'view', child: Text('View Score')),
+                  PopupMenuItem(value: 'download', child: Text('Download Script')),
+                ],
+              ),
+            ],
+          ),
           const Spacer(),
           Text(
-            '${a['name'] ?? ''}',
+            quizName,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
