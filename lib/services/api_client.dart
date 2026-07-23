@@ -614,6 +614,17 @@ class ApiClient {
     return body;
   }
 
+  Future<Map<String, dynamic>> getSubjectAssignmentDetail(int classSubId, int assignmentId, {int? childId}) async {
+    final res = await http
+        .get(Uri.parse(ApiConfig.subjectAssignmentDetailUrl(classSubId, assignmentId, childId: childId)), headers: auth.authHeaders)
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200) {
+      throw Exception(body['message'] ?? 'Failed to load assignment.');
+    }
+    return body;
+  }
+
   Future<Map<String, dynamic>> getSubjectFeedback(int classSubId) async {
     final res = await http
         .get(Uri.parse(ApiConfig.subjectFeedbackUrl(classSubId)), headers: auth.authHeaders)

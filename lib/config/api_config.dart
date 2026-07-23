@@ -28,6 +28,9 @@ class ApiConfig {
   static String subjectLessonsCalendarUrl(int classSubId, {int? term}) =>
       '$baseUrl/api/classroom/subject/$classSubId/lessons/calendar${term != null ? '?term=$term' : ''}';
   static String subjectAssignmentsUrl(int classSubId) => '$baseUrl/api/classroom/subject/$classSubId/assignments';
+  static String subjectAssignmentDetailUrl(int classSubId, int assignmentId, {int? childId}) => childId != null
+      ? '$baseUrl/api/classroom/subject/$classSubId/assignment/$assignmentId?childId=$childId'
+      : '$baseUrl/api/classroom/subject/$classSubId/assignment/$assignmentId';
   static String subjectFeedbackUrl(int classSubId) => '$baseUrl/api/classroom/subject/$classSubId/feedback';
 
   static String lessonDetailUrl(int lessonId) => '$baseUrl/api/classroom/lesson/$lessonId';

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
+import 'assignment_score_screen.dart';
 import 'lesson_day_view_screen.dart';
 
 // ── shared navigation bits ─────────────────────────────────────────────────
@@ -12,6 +13,7 @@ import 'lesson_day_view_screen.dart';
 enum _Section { dashboard, lessons, assignments, feedback }
 
 num _asNum(dynamic v) => (v is num) ? v : (num.tryParse('$v') ?? 0);
+int _asInt(dynamic v) => _asNum(v).toInt();
 
 int _classSubIdOf(Map<String, dynamic> subject) => _asNum(subject['class_sub_id']).toInt();
 
@@ -892,40 +894,54 @@ class _SubjectAssignmentsScreenState extends State<SubjectAssignmentsScreen> {
     );
   }
 
-  Widget _assignmentTile(Map<String, dynamic> a) {
+  Widget _assignmentTile(Map<String, dynamic> a, {int? childId}) {
     final scheme = Theme.of(context).colorScheme;
     final status = '${a['submission_status'] ?? ''}';
+    final assignmentId = _asInt(a['assignment_id']);
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardTheme.color ?? scheme.surface,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('${a['assignment_name'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
-                  const SizedBox(height: 4),
-                  Text('Due ${a['assignment_due_date'] ?? '—'} · ${a['assignment_total_score'] ?? 100} pts',
-                      style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
-                ],
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => AssignmentScoreScreen(
+            classSubId: _classSubId,
+            assignmentId: assignmentId,
+            assignmentName: '${a['assignment_name'] ?? ''}',
+            childId: childId,
+          ),
+        )),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardTheme.color ?? scheme.surface,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('${a['assignment_name'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                    const SizedBox(height: 4),
+                    Text('Due ${a['assignment_due_date'] ?? '—'} · ${a['assignment_total_score'] ?? 100} pts',
+                        style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
+                  ],
+                ),
               ),
-            ),
-            if (a.containsKey('submission_id')) _statusBadge(status),
-            if (a.containsKey('submitted_count'))
-              Text('${a['submitted_count'] ?? 0} submitted', style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
-          ],
+              if (a.containsKey('submission_id')) _statusBadge(status),
+              if (a.containsKey('submitted_count'))
+                Text('${a['submitted_count'] ?? 0} submitted', style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
+              const SizedBox(width: 4),
+              Icon(Icons.chevron_right, size: 18, color: scheme.onSurfaceVariant),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _list(List<dynamic> assignments) {
+  Widget _list(List<dynamic> assignments, {int? childId}) {
     final items = List<Map<String, dynamic>>.from(assignments);
     if (items.isEmpty) {
       return const Padding(
@@ -933,7 +949,7 @@ class _SubjectAssignmentsScreenState extends State<SubjectAssignmentsScreen> {
         child: Center(child: Text('No assignments published yet.')),
       );
     }
-    return Column(children: [for (final a in items) _assignmentTile(a)]);
+    return Column(children: [for (final a in items) _assignmentTile(a, childId: childId)]);
   }
 
   Widget _childrenSection(List<dynamic> children) {
@@ -949,7 +965,7 @@ class _SubjectAssignmentsScreenState extends State<SubjectAssignmentsScreen> {
         for (final child in List<Map<String, dynamic>>.from(children)) ...[
           Text('${child['childName'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
           const SizedBox(height: 10),
-          _list(List<dynamic>.from(child['assignments'] ?? [])),
+          _list(List<dynamic>.from(child['assignments'] ?? []), childId: _asInt(child['childUserId'])),
           const SizedBox(height: 22),
         ],
       ],
@@ -968,7 +984,7 @@ class _SubjectAssignmentsScreenState extends State<SubjectAssignmentsScreen> {
           if (mode == 'children')
             _childrenSection(List<dynamic>.from(_body['children'] ?? []))
           else
-            _list(List<dynamic>.from(_body['assignments'] ?? [])),
+            _list(List<dynamic>.from(_body['assignments'] ?? []), childId: widget.childId),
         ],
       ),
     );
