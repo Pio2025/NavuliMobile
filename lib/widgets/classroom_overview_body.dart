@@ -81,8 +81,9 @@ class ClassroomOverviewBody extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 20,
+            backgroundColor: AppColors.primary.withValues(alpha: 0.15),
             backgroundImage: photo.isNotEmpty ? NetworkImage(ApiConfig.photoUrl(photo)) : null,
-            child: photo.isEmpty ? const Icon(Icons.person, color: Colors.white, size: 18) : null,
+            child: photo.isEmpty ? const Icon(Icons.person, color: AppColors.primary, size: 18) : null,
           ),
           const SizedBox(width: 12),
           Expanded(

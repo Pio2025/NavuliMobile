@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../config/api_config.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
+import '../theme/app_theme.dart';
 
 class ClassroomCaptainsScreen extends StatefulWidget {
   final int classId;
@@ -62,8 +63,9 @@ class _ClassroomCaptainsScreenState extends State<ClassroomCaptainsScreen> {
         children: [
           CircleAvatar(
             radius: 22,
+            backgroundColor: AppColors.primary.withValues(alpha: 0.15),
             backgroundImage: photo.isNotEmpty ? NetworkImage(ApiConfig.photoUrl(photo)) : null,
-            child: photo.isEmpty ? const Icon(Icons.person, color: Colors.white, size: 20) : null,
+            child: photo.isEmpty ? const Icon(Icons.person, color: AppColors.primary, size: 20) : null,
           ),
           const SizedBox(width: 14),
           Expanded(
