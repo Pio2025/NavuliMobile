@@ -666,6 +666,28 @@ class ApiClient {
     return body;
   }
 
+  Future<List<Map<String, dynamic>>> getLessonDiscussionFeed(int lessonId) async {
+    final res = await http
+        .get(Uri.parse(ApiConfig.lessonDiscussionFeedUrl(lessonId)), headers: auth.authHeaders)
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to load discussion.');
+    }
+    return List<Map<String, dynamic>>.from(body['discussion'] ?? []);
+  }
+
+  Future<String> getChatSocketToken() async {
+    final res = await http
+        .get(Uri.parse(ApiConfig.chatSocketTokenUrl), headers: auth.authHeaders)
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to get socket token.');
+    }
+    return body['token'] as String;
+  }
+
   Future<Map<String, dynamic>> getLessonQuizScore(int quizId, {int? childId}) async {
     final res = await http
         .get(Uri.parse(ApiConfig.lessonQuizScoreUrl(quizId, childId: childId)), headers: auth.authHeaders)

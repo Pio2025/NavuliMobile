@@ -1,5 +1,7 @@
 class ApiConfig {
   static const String baseUrl = 'https://navulifiji.com';
+  static const String chatSocketUrl = 'https://navuli-websocket-jg23.onrender.com';
+  static const String chatSocketTokenUrl = '$baseUrl/api/chat/socket-token';
 
   static const String loginUrl = '$baseUrl/api/auth/login';
   static const String meUrl = '$baseUrl/api/auth/me';
@@ -33,6 +35,7 @@ class ApiConfig {
       ? '$baseUrl/api/classroom/lesson/quiz/$quizId/score?childId=$childId'
       : '$baseUrl/api/classroom/lesson/quiz/$quizId/score';
   static String lessonDiscussionPostUrl(int lessonId) => '$baseUrl/api/classroom/lesson/$lessonId/discussion';
+  static String lessonDiscussionFeedUrl(int lessonId) => '$baseUrl/api/classroom/lesson/$lessonId/discussion/feed';
   static String lessonDiscussionLikeUrl(int discussionId) => '$baseUrl/api/classroom/lesson/discussion/$discussionId/like';
   static String lessonDiscussionReactionsUrl(int discussionId) => '$baseUrl/api/classroom/lesson/discussion/$discussionId/reactions';
   static String lessonDiscussionCommentUrl(int discussionId) => '$baseUrl/api/classroom/lesson/discussion/$discussionId/comment';

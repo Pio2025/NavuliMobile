@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../config/api_config.dart';
 import '../services/api_client.dart';
+import '../services/lesson_discussion_realtime.dart';
 import '../theme/app_theme.dart';
 import '../utils/time_ago.dart';
 
@@ -153,15 +154,25 @@ class _LessonDiscussionSectionState extends State<LessonDiscussionSection> {
   late List<Map<String, dynamic>> _posts;
   final List<XFile> _pendingImages = [];
   bool _posting = false;
+  LessonDiscussionRealtime? _realtime;
 
   @override
   void initState() {
     super.initState();
     _posts = widget.initialDiscussions.map(_clonePost).toList();
+    _realtime = LessonDiscussionRealtime(
+      client: widget.client,
+      lessonId: widget.lessonId,
+      onUpdate: (discussion) {
+        if (!mounted) return;
+        setState(() => _posts = discussion.map(_clonePost).toList());
+      },
+    )..start();
   }
 
   @override
   void dispose() {
+    _realtime?.dispose();
     _msgCtrl.dispose();
     super.dispose();
   }
