@@ -375,7 +375,7 @@ class _QuizScoreScreenState extends State<QuizScoreScreen> {
 
 String _formatDate(dynamic raw) {
   final s = '${raw ?? ''}';
-  if (s.isEmpty) return '—';
+  if (s.isEmpty) return '-';
   final dt = DateTime.tryParse(s);
   if (dt == null) return s;
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -404,7 +404,7 @@ Future<Uint8List> _buildTranscriptPdf(Map<String, dynamic> data, String studentN
       pageFormat: PdfPageFormat.a4,
       build: (context) => [
         pw.Text('${quiz['name'] ?? ''}', style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
-        pw.Text('Quiz Transcript — ${lesson['title'] ?? ''}', style: const pw.TextStyle(fontSize: 13, color: PdfColors.grey700)),
+        pw.Text('Quiz Transcript - ${lesson['title'] ?? ''}', style: const pw.TextStyle(fontSize: 13, color: PdfColors.grey700)),
         pw.SizedBox(height: 10),
         pw.Divider(color: PdfColors.blue400, thickness: 2),
         pw.SizedBox(height: 10),
@@ -455,7 +455,7 @@ Future<Uint8List> _buildTranscriptPdf(Map<String, dynamic> data, String studentN
         for (var i = 0; i < questions.length; i++) _questionBlock(i + 1, questions[i], letters),
         pw.SizedBox(height: 16),
         pw.Divider(color: PdfColors.grey400),
-        pw.Text('Generated on ${_formatDate(DateTime.now().toIso8601String())} — $studentName — ${quiz['name'] ?? ''}',
+        pw.Text('Generated on ${_formatDate(DateTime.now().toIso8601String())} - $studentName - ${quiz['name'] ?? ''}',
             style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
       ],
     ),
