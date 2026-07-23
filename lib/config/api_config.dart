@@ -36,7 +36,9 @@ class ApiConfig {
     final qs = params.isEmpty ? '' : '?${params.join('&')}';
     return '$baseUrl/api/classroom/$id/attendance/subject$qs';
   }
-  static String classroomExamUrl(int id) => '$baseUrl/api/classroom/$id/exam';
+  static String classroomExamUrl(int id, {int? childId}) => childId != null
+      ? '$baseUrl/api/classroom/$id/exam?childId=$childId'
+      : '$baseUrl/api/classroom/$id/exam';
   static String classroomDiscussionUrl(int id) => '$baseUrl/api/classroom/$id/discussion';
   static String subjectDashboardUrl(int classSubId) => '$baseUrl/api/classroom/subject/$classSubId/dashboard';
   static String subjectLessonsUrl(int classSubId) => '$baseUrl/api/classroom/subject/$classSubId/lessons';

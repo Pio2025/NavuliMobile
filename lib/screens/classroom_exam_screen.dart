@@ -10,8 +10,9 @@ import 'exam_report_card_screen.dart';
 
 class ClassroomExamScreen extends StatefulWidget {
   final int classId;
+  final int? childId;
 
-  const ClassroomExamScreen({super.key, required this.classId});
+  const ClassroomExamScreen({super.key, required this.classId, this.childId});
 
   @override
   State<ClassroomExamScreen> createState() => _ClassroomExamScreenState();
@@ -38,7 +39,7 @@ class _ClassroomExamScreenState extends State<ClassroomExamScreen> {
       _error = null;
     });
     try {
-      final body = await _client.getClassroomExam(widget.classId);
+      final body = await _client.getClassroomExam(widget.classId, childId: widget.childId);
       final mode = '${body['mode'] ?? ''}';
       Map<String, dynamic> termsSource;
       if (mode == 'children') {

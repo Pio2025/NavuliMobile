@@ -168,7 +168,7 @@ class _ClassroomFullDetailScreenState extends State<ClassroomFullDetailScreen> {
             IconButton(
               icon: const Icon(Icons.fact_check_outlined),
               tooltip: 'Exam',
-              onPressed: () => _openTab((id) => ClassroomExamScreen(classId: id)),
+              onPressed: () => _openTab((id) => ClassroomExamScreen(classId: id, childId: widget.childId)),
             ),
             IconButton(
               icon: const Icon(Icons.forum_outlined),
