@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 class YoutubePlayerScreen extends StatefulWidget {
   final String videoId;
@@ -11,16 +11,10 @@ class YoutubePlayerScreen extends StatefulWidget {
 }
 
 class _YoutubePlayerScreenState extends State<YoutubePlayerScreen> {
-  late final YoutubePlayerController _controller = YoutubePlayerController(
-    initialVideoId: widget.videoId,
-    flags: const YoutubePlayerFlags(autoPlay: true, mute: false),
-  );
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+  late final WebViewController _controller = WebViewController()
+    ..setJavaScriptMode(JavaScriptMode.unrestricted)
+    ..setBackgroundColor(Colors.black)
+    ..loadRequest(Uri.parse('https://www.youtube.com/embed/${widget.videoId}?autoplay=1&playsinline=1'));
 
   @override
   Widget build(BuildContext context) {
@@ -32,10 +26,10 @@ class _YoutubePlayerScreenState extends State<YoutubePlayerScreen> {
         elevation: 0,
         title: const Text('Video'),
       ),
-      body: Center(
-        child: YoutubePlayer(
-          controller: _controller,
-          showVideoProgressIndicator: true,
+      body: SafeArea(
+        child: AspectRatio(
+          aspectRatio: 16 / 9,
+          child: WebViewWidget(controller: _controller),
         ),
       ),
     );
