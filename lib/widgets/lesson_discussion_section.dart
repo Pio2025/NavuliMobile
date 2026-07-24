@@ -10,129 +10,8 @@ import '../services/lesson_discussion_realtime.dart';
 import '../theme/app_theme.dart';
 import '../utils/time_ago.dart';
 import 'app_snackbar.dart';
+import 'discussion/discussion_common.dart';
 import 'error_state.dart' show friendlyErrorMessage;
-
-int _asInt(dynamic v) => v is num ? v.toInt() : (int.tryParse('$v') ?? 0);
-
-void showReactionsSheet(BuildContext context, Future<List<Map<String, dynamic>>> Function() loader) {
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (_) => _ReactionsSheet(loader: loader),
-  );
-}
-
-class _ReactionsSheet extends StatelessWidget {
-  final Future<List<Map<String, dynamic>>> Function() loader;
-
-  const _ReactionsSheet({required this.loader});
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.6),
-      decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: 10),
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: scheme.onSurfaceVariant.withValues(alpha: 0.4),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(height: 12),
-          const Text('Reactions', style: TextStyle(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 8),
-          Flexible(
-            child: FutureBuilder<List<Map<String, dynamic>>>(
-              future: loader(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState != ConnectionState.done) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 32),
-                    child: Center(child: CircularProgressIndicator()),
-                  );
-                }
-                if (snapshot.hasError) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 32),
-                    child: Center(child: Text('${snapshot.error}', style: TextStyle(color: scheme.error))),
-                  );
-                }
-                final reactions = snapshot.data ?? [];
-                if (reactions.isEmpty) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 32),
-                    child: Center(child: Text('No reactions yet.', style: TextStyle(color: scheme.onSurfaceVariant))),
-                  );
-                }
-                return ListView.separated(
-                  shrinkWrap: true,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  itemCount: reactions.length,
-                  separatorBuilder: (_, _) => const Divider(height: 1),
-                  itemBuilder: (context, i) {
-                    final r = reactions[i];
-                    final isLike = '${r['type']}' == 'like';
-                    final photo = '${r['photo'] ?? ''}';
-                    return ListTile(
-                      dense: true,
-                      leading: CircleAvatar(
-                        radius: 16,
-                        backgroundColor: AppColors.primary.withValues(alpha: 0.15),
-                        backgroundImage: photo.isNotEmpty ? NetworkImage(ApiConfig.photoUrl(photo)) : null,
-                        child: photo.isEmpty ? const Icon(Icons.person, color: AppColors.primary, size: 16) : null,
-                      ),
-                      title: Text('${r['name'] ?? ''}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                      trailing: Icon(
-                        isLike ? Icons.thumb_up : Icons.thumb_down,
-                        size: 16,
-                        color: isLike ? AppColors.primary : AppColors.danger,
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 12),
-        ],
-        ),
-      ),
-    );
-  }
-}
-
-Map<String, dynamic> _cloneReply(Map<String, dynamic> r) => {
-      ...Map<String, dynamic>.from(r),
-      'replies': List<Map<String, dynamic>>.from(
-          (r['replies'] as List? ?? []).map((x) => _cloneReply(Map<String, dynamic>.from(x)))),
-    };
-
-Map<String, dynamic> _cloneComment(Map<String, dynamic> c) => {
-      ...Map<String, dynamic>.from(c),
-      'replies': List<Map<String, dynamic>>.from(
-          (c['replies'] as List? ?? []).map((r) => _cloneReply(Map<String, dynamic>.from(r)))),
-    };
-
-Map<String, dynamic> _clonePost(Map<String, dynamic> p) => {
-      ...Map<String, dynamic>.from(p),
-      'photos': List<Map<String, dynamic>>.from(
-          (p['photos'] as List? ?? []).map((x) => Map<String, dynamic>.from(x))),
-      'comments': List<Map<String, dynamic>>.from(
-          (p['comments'] as List? ?? []).map((c) => _cloneComment(Map<String, dynamic>.from(c)))),
-    };
 
 class LessonDiscussionSection extends StatefulWidget {
   final ApiClient client;
@@ -161,13 +40,13 @@ class _LessonDiscussionSectionState extends State<LessonDiscussionSection> {
   @override
   void initState() {
     super.initState();
-    _posts = widget.initialDiscussions.map(_clonePost).toList();
+    _posts = widget.initialDiscussions.map(clonePost).toList();
     _realtime = LessonDiscussionRealtime(
       client: widget.client,
       lessonId: widget.lessonId,
       onUpdate: (discussion) {
         if (!mounted) return;
-        setState(() => _posts = discussion.map(_clonePost).toList());
+        setState(() => _posts = discussion.map(clonePost).toList());
       },
     )..start();
   }
@@ -201,7 +80,7 @@ class _LessonDiscussionSectionState extends State<LessonDiscussionSection> {
         photos: photoFiles.isEmpty ? null : photoFiles,
       );
       setState(() {
-        _posts.insert(0, _clonePost(post));
+        _posts.insert(0, clonePost(post));
         _msgCtrl.clear();
         _pendingImages.clear();
         _posting = false;
@@ -214,7 +93,7 @@ class _LessonDiscussionSectionState extends State<LessonDiscussionSection> {
   }
 
   Future<void> _reactToPost(Map<String, dynamic> post, String type) async {
-    final discussionId = _asInt(post['lesson_discussion_id']);
+    final discussionId = asInt(post['lesson_discussion_id']);
     try {
       final result = await widget.client.likeLessonDiscussion(discussionId, type: type);
       setState(() {
@@ -229,7 +108,7 @@ class _LessonDiscussionSectionState extends State<LessonDiscussionSection> {
   }
 
   void _openComments(Map<String, dynamic> post) {
-    final discussionId = _asInt(post['lesson_discussion_id']);
+    final discussionId = asInt(post['lesson_discussion_id']);
     final comments = List<Map<String, dynamic>>.from(post['comments'] as List);
     showModalBottomSheet(
       context: context,
@@ -242,7 +121,7 @@ class _LessonDiscussionSectionState extends State<LessonDiscussionSection> {
         onCommentAdded: () {
           setState(() {
             post['comments'] = comments;
-            post['comment_count'] = _asInt(post['comment_count']) + 1;
+            post['comment_count'] = asInt(post['comment_count']) + 1;
           });
         },
       ),
@@ -253,7 +132,7 @@ class _LessonDiscussionSectionState extends State<LessonDiscussionSection> {
     final urls = photos.map((p) => ApiConfig.lessonDiscussionPhotoUrl('${p['photo_path'] ?? ''}')).toList();
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => _ImageViewerScreen(urls: urls, initialIndex: initialIndex),
+        builder: (_) => ImageViewerScreen(urls: urls, initialIndex: initialIndex),
         fullscreenDialog: true,
       ),
     );
@@ -343,8 +222,8 @@ class _LessonDiscussionSectionState extends State<LessonDiscussionSection> {
     final scheme = Theme.of(context).colorScheme;
     final photos = List<Map<String, dynamic>>.from(post['photos'] as List? ?? []);
     final reaction = post['user_reaction'];
-    final discussionId = _asInt(post['lesson_discussion_id']);
-    final totalReactions = _asInt(post['like_count']) + _asInt(post['dislike_count']);
+    final discussionId = asInt(post['lesson_discussion_id']);
+    final totalReactions = asInt(post['like_count']) + asInt(post['dislike_count']);
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
@@ -516,46 +395,6 @@ class _PendingImageThumb extends StatelessWidget {
   }
 }
 
-class _ImageViewerScreen extends StatefulWidget {
-  final List<String> urls;
-  final int initialIndex;
-
-  const _ImageViewerScreen({required this.urls, required this.initialIndex});
-
-  @override
-  State<_ImageViewerScreen> createState() => _ImageViewerScreenState();
-}
-
-class _ImageViewerScreenState extends State<_ImageViewerScreen> {
-  late final PageController _pageCtrl = PageController(initialPage: widget.initialIndex);
-  late int _index = widget.initialIndex;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        title: Text('${_index + 1} / ${widget.urls.length}'),
-      ),
-      body: PageView.builder(
-        controller: _pageCtrl,
-        itemCount: widget.urls.length,
-        onPageChanged: (i) => setState(() => _index = i),
-        itemBuilder: (context, i) => InteractiveViewer(
-          child: Center(
-            child: Image.network(
-              widget.urls[i],
-              errorBuilder: (context, error, stack) => const Icon(Icons.broken_image_outlined, color: Colors.white54, size: 48),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class _CommentsSheet extends StatefulWidget {
   final ApiClient client;
@@ -597,7 +436,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
     try {
       final comment = await widget.client.commentLessonDiscussion(widget.discussionId, text);
       setState(() {
-        widget.comments.add(_cloneComment(comment));
+        widget.comments.add(cloneComment(comment));
         _commentCtrl.clear();
         _sendingComment = false;
       });
@@ -610,7 +449,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
   }
 
   Future<void> _sendReply(Map<String, dynamic> comment) async {
-    final commentId = _asInt(comment['comment_id']);
+    final commentId = asInt(comment['comment_id']);
     final key = 'c$commentId';
     final ctrl = _replyCtrls[key];
     final text = ctrl?.text.trim() ?? '';
@@ -619,7 +458,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
     try {
       final reply = await widget.client.replyLessonDiscussionComment(commentId, text);
       setState(() {
-        (comment['replies'] as List<Map<String, dynamic>>).add(_cloneReply(reply));
+        (comment['replies'] as List<Map<String, dynamic>>).add(cloneReply(reply));
         ctrl?.clear();
         _replyingToKey = null;
         _sendingReply = false;
@@ -632,7 +471,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
   }
 
   Future<void> _sendNestedReply(Map<String, dynamic> parentReply) async {
-    final parentReplyId = _asInt(parentReply['reply_id']);
+    final parentReplyId = asInt(parentReply['reply_id']);
     final key = 'r$parentReplyId';
     final ctrl = _replyCtrls[key];
     final text = ctrl?.text.trim() ?? '';
@@ -641,7 +480,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
     try {
       final reply = await widget.client.replyToLessonDiscussionReply(parentReplyId, text);
       setState(() {
-        (parentReply['replies'] as List<Map<String, dynamic>>).add(_cloneReply(reply));
+        (parentReply['replies'] as List<Map<String, dynamic>>).add(cloneReply(reply));
         ctrl?.clear();
         _replyingToKey = null;
         _sendingReply = false;
@@ -654,7 +493,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
   }
 
   Future<void> _reactToComment(Map<String, dynamic> comment, String type) async {
-    final commentId = _asInt(comment['comment_id']);
+    final commentId = asInt(comment['comment_id']);
     try {
       final result = await widget.client.likeLessonDiscussionComment(commentId, type: type);
       setState(() {
@@ -669,7 +508,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
   }
 
   Future<void> _reactToReply(Map<String, dynamic> reply, String type) async {
-    final replyId = _asInt(reply['reply_id']);
+    final replyId = asInt(reply['reply_id']);
     try {
       final result = await widget.client.likeLessonDiscussionReply(replyId, type: type);
       setState(() {
@@ -715,7 +554,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
   }) {
     final scheme = Theme.of(context).colorScheme;
     final reaction = target['user_reaction'];
-    final totalReactions = _asInt(target['like_count']) + _asInt(target['dislike_count']);
+    final totalReactions = asInt(target['like_count']) + asInt(target['dislike_count']);
     return Row(
       children: [
         GestureDetector(
@@ -771,7 +610,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
   }
 
   Widget _replyTile(Map<String, dynamic> r, {int depth = 0}) {
-    final replyId = _asInt(r['reply_id']);
+    final replyId = asInt(r['reply_id']);
     final key = 'r$replyId';
     final nested = List<Map<String, dynamic>>.from(r['replies'] as List? ?? []);
     final ctrl = _replyCtrls.putIfAbsent(key, () => TextEditingController());
@@ -823,7 +662,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
   }
 
   Widget _commentTile(Map<String, dynamic> c) {
-    final commentId = _asInt(c['comment_id']);
+    final commentId = asInt(c['comment_id']);
     final key = 'c$commentId';
     final replies = List<Map<String, dynamic>>.from(c['replies'] as List? ?? []);
     final ctrl = _replyCtrls.putIfAbsent(key, () => TextEditingController());

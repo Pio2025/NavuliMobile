@@ -40,6 +40,16 @@ class ApiConfig {
       ? '$baseUrl/api/classroom/$id/exam?childId=$childId'
       : '$baseUrl/api/classroom/$id/exam';
   static String classroomDiscussionUrl(int id) => '$baseUrl/api/classroom/$id/discussion';
+  static String classDiscussionPostUrl(int classId) => '$baseUrl/api/classroom/$classId/discussion';
+  static String classDiscussionLikeUrl(int postId) => '$baseUrl/api/classroom/discussion/$postId/like';
+  static String classDiscussionReactionsUrl(int postId) => '$baseUrl/api/classroom/discussion/$postId/reactions';
+  static String classDiscussionCommentUrl(int postId) => '$baseUrl/api/classroom/discussion/$postId/comment';
+  static String classDiscussionCommentLikeUrl(int commentId) => '$baseUrl/api/classroom/discussion/comment/$commentId/like';
+  static String classDiscussionCommentReactionsUrl(int commentId) => '$baseUrl/api/classroom/discussion/comment/$commentId/reactions';
+  static String classDiscussionCommentReplyUrl(int commentId) => '$baseUrl/api/classroom/discussion/comment/$commentId/reply';
+  static String classDiscussionReplyLikeUrl(int replyId) => '$baseUrl/api/classroom/discussion/reply/$replyId/like';
+  static String classDiscussionReplyReactionsUrl(int replyId) => '$baseUrl/api/classroom/discussion/reply/$replyId/reactions';
+  static String classDiscussionReplyReplyUrl(int replyId) => '$baseUrl/api/classroom/discussion/reply/$replyId/reply';
   static String subjectDashboardUrl(int classSubId) => '$baseUrl/api/classroom/subject/$classSubId/dashboard';
   static String subjectLessonsUrl(int classSubId) => '$baseUrl/api/classroom/subject/$classSubId/lessons';
   static String subjectLessonsCalendarUrl(int classSubId, {int? term}) =>
