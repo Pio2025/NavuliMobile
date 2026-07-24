@@ -5,23 +5,30 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 
 import '../config/api_config.dart';
+import '../screens/discussion_moderation_screen.dart';
 import '../services/api_client.dart';
 import '../services/lesson_discussion_realtime.dart';
 import '../theme/app_theme.dart';
 import '../utils/time_ago.dart';
 import 'app_snackbar.dart';
 import 'discussion/discussion_common.dart';
+import 'discussion/media_embed.dart';
+import 'discussion/photo_grid.dart';
 import 'error_state.dart' show friendlyErrorMessage;
 
 class LessonDiscussionSection extends StatefulWidget {
   final ApiClient client;
   final int lessonId;
+  final int classId;
+  final bool canModerate;
   final List<Map<String, dynamic>> initialDiscussions;
 
   const LessonDiscussionSection({
     super.key,
     required this.client,
     required this.lessonId,
+    required this.classId,
+    this.canModerate = false,
     required this.initialDiscussions,
   });
 
@@ -138,6 +145,55 @@ class _LessonDiscussionSectionState extends State<LessonDiscussionSection> {
     );
   }
 
+  void _openModerationQueue() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => DiscussionModerationScreen(client: widget.client, classId: widget.classId)),
+    );
+  }
+
+  Future<void> _editPost(Map<String, dynamic> post) async {
+    final discussionId = asInt(post['lesson_discussion_id']);
+    await showDiscussionEditDialog(
+      context,
+      initialText: '${post['message'] ?? ''}',
+      onSubmit: (text) async {
+        final result = await widget.client.lessonDiscussionEdit(discussionId, message: text);
+        setState(() {
+          post['message'] = result['message'];
+          post['edited_at'] = result['edited_at'];
+          post['is_edited'] = true;
+        });
+      },
+    );
+  }
+
+  Future<void> _deletePost(Map<String, dynamic> post) async {
+    if (!await confirmDiscussionDelete(context, 'post')) return;
+    final discussionId = asInt(post['lesson_discussion_id']);
+    try {
+      await widget.client.lessonDiscussionDelete(discussionId);
+      if (!mounted) return;
+      setState(() => _posts.removeWhere((p) => p['lesson_discussion_id'] == post['lesson_discussion_id']));
+    } catch (e) {
+      if (!mounted) return;
+      AppSnackbar.error(context, friendlyErrorMessage(e));
+    }
+  }
+
+  Future<void> _reportPost(Map<String, dynamic> post) async {
+    final discussionId = asInt(post['lesson_discussion_id']);
+    await showDiscussionReportDialog(
+      context,
+      onSubmit: (description) async {
+        await widget.client.lessonDiscussionReport(discussionId, description: description);
+        setState(() {
+          post['is_reported'] = true;
+          post['report_count'] = asInt(post['report_count']) + 1;
+        });
+      },
+    );
+  }
+
   Widget _composer(ColorScheme scheme) {
     return Container(
       padding: const EdgeInsets.all(14),
@@ -194,7 +250,7 @@ class _LessonDiscussionSectionState extends State<LessonDiscussionSection> {
     );
   }
 
-  Widget _authorRow(String name, String photo, String createdAt, {double radius = 16}) {
+  Widget _authorRow(String name, String photo, String roleName, String createdAt, {double radius = 16, bool isEdited = false}) {
     final scheme = Theme.of(context).colorScheme;
     return Row(
       children: [
@@ -210,7 +266,15 @@ class _LessonDiscussionSectionState extends State<LessonDiscussionSection> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
-              Text(timeAgo(createdAt), style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
+              Row(
+                children: [
+                  Text(
+                    [if (roleName.isNotEmpty) roleName, timeAgo(createdAt)].join(' · '),
+                    style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
+                  ),
+                  if (isEdited) const EditedBadge(),
+                ],
+              ),
             ],
           ),
         ),
@@ -221,9 +285,13 @@ class _LessonDiscussionSectionState extends State<LessonDiscussionSection> {
   Widget _postCard(Map<String, dynamic> post) {
     final scheme = Theme.of(context).colorScheme;
     final photos = List<Map<String, dynamic>>.from(post['photos'] as List? ?? []);
+    final photoUrls = photos.map((p) => ApiConfig.lessonDiscussionPhotoUrl('${p['photo_path'] ?? ''}')).toList();
+    final message = '${post['message'] ?? ''}';
+    final urls = extractUrls(message);
     final reaction = post['user_reaction'];
     final discussionId = asInt(post['lesson_discussion_id']);
     final totalReactions = asInt(post['like_count']) + asInt(post['dislike_count']);
+    final isRemoved = post['is_removed'] == true;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
@@ -234,80 +302,96 @@ class _LessonDiscussionSectionState extends State<LessonDiscussionSection> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _authorRow('${post['author_name'] ?? ''}', '${post['author_photo'] ?? ''}', '${post['created_at'] ?? ''}'),
-          if ((post['message'] ?? '').toString().isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Text('${post['message']}', style: const TextStyle(fontSize: 14)),
-          ],
-          if (photos.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            SizedBox(
-              height: 90,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: photos.length,
-                separatorBuilder: (_, _) => const SizedBox(width: 8),
-                itemBuilder: (context, i) => GestureDetector(
-                  onTap: () => _openPhotos(photos, i),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Image.network(
-                      ApiConfig.lessonDiscussionPhotoUrl('${photos[i]['photo_path'] ?? ''}'),
-                      width: 90,
-                      height: 90,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stack) => Container(
-                        width: 90,
-                        height: 90,
-                        color: scheme.surfaceContainerHighest,
-                        child: const Icon(Icons.broken_image_outlined),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-          const SizedBox(height: 8),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              TextButton.icon(
-                onPressed: () => _reactToPost(post, 'like'),
-                icon: Icon(
-                  reaction == 'like' ? Icons.thumb_up : Icons.thumb_up_outlined,
-                  size: 16,
-                  color: reaction == 'like' ? AppColors.primary : scheme.onSurfaceVariant,
-                ),
-                label: Text(
-                  '${post['like_count'] ?? 0}',
-                  style: TextStyle(fontSize: 12, color: reaction == 'like' ? AppColors.primary : scheme.onSurfaceVariant),
+              Expanded(
+                child: _authorRow(
+                  '${post['author_name'] ?? ''}',
+                  '${post['author_photo'] ?? ''}',
+                  '${post['author_role_cat_name'] ?? ''}',
+                  '${post['created_at'] ?? ''}',
+                  isEdited: post['is_edited'] == true,
                 ),
               ),
-              TextButton.icon(
-                onPressed: () => _reactToPost(post, 'dislike'),
-                icon: Icon(
-                  reaction == 'dislike' ? Icons.thumb_down : Icons.thumb_down_outlined,
-                  size: 16,
-                  color: reaction == 'dislike' ? AppColors.danger : scheme.onSurfaceVariant,
-                ),
-                label: Text(
-                  '${post['dislike_count'] ?? 0}',
-                  style: TextStyle(fontSize: 12, color: reaction == 'dislike' ? AppColors.danger : scheme.onSurfaceVariant),
-                ),
-              ),
-              TextButton.icon(
-                onPressed: () => _openComments(post),
-                icon: Icon(Icons.mode_comment_outlined, size: 16, color: scheme.onSurfaceVariant),
-                label: Text('${post['comment_count'] ?? 0}', style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant)),
-              ),
-              if (totalReactions > 0)
-                TextButton.icon(
-                  onPressed: () => showReactionsSheet(context, () => widget.client.getLessonDiscussionReactions(discussionId)),
-                  icon: Icon(Icons.people_outline, size: 15, color: scheme.onSurfaceVariant),
-                  label: Text('$totalReactions', style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant)),
+              if (!isRemoved)
+                DiscussionActionMenu(
+                  canEdit: post['can_edit'] == true,
+                  canDelete: post['can_delete'] == true,
+                  onEdit: () => _editPost(post),
+                  onDelete: () => _deletePost(post),
+                  onReport: post['is_mine'] == true ? null : () => _reportPost(post),
                 ),
             ],
           ),
+          if (isRemoved) ...[
+            const SizedBox(height: 10),
+            DeletedContentTile(label: 'Deleted post', removal: post['removal'] as Map<String, dynamic>?),
+          ] else ...[
+            if (message.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              ExpandableText(message, style: const TextStyle(fontSize: 14)),
+            ],
+            if (urls.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              DiscussionMediaEmbed(url: urls.first),
+            ],
+            if (photos.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              DiscussionPhotoGrid(
+                photoUrls: photoUrls,
+                onTapPhoto: (i) => _openPhotos(photos, i),
+              ),
+            ],
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                TextButton.icon(
+                  onPressed: () => _reactToPost(post, 'like'),
+                  icon: Icon(
+                    reaction == 'like' ? Icons.thumb_up : Icons.thumb_up_outlined,
+                    size: 16,
+                    color: reaction == 'like' ? AppColors.primary : scheme.onSurfaceVariant,
+                  ),
+                  label: Text(
+                    '${post['like_count'] ?? 0}',
+                    style: TextStyle(fontSize: 12, color: reaction == 'like' ? AppColors.primary : scheme.onSurfaceVariant),
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: () => _reactToPost(post, 'dislike'),
+                  icon: Icon(
+                    reaction == 'dislike' ? Icons.thumb_down : Icons.thumb_down_outlined,
+                    size: 16,
+                    color: reaction == 'dislike' ? AppColors.danger : scheme.onSurfaceVariant,
+                  ),
+                  label: Text(
+                    '${post['dislike_count'] ?? 0}',
+                    style: TextStyle(fontSize: 12, color: reaction == 'dislike' ? AppColors.danger : scheme.onSurfaceVariant),
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: () => _openComments(post),
+                  icon: Icon(Icons.mode_comment_outlined, size: 16, color: scheme.onSurfaceVariant),
+                  label: Text('${post['comment_count'] ?? 0}', style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant)),
+                ),
+                if (totalReactions > 0)
+                  TextButton.icon(
+                    onPressed: () => showReactionsSheet(context, () => widget.client.getLessonDiscussionReactions(discussionId)),
+                    icon: Icon(Icons.people_outline, size: 15, color: scheme.onSurfaceVariant),
+                    label: Text('$totalReactions', style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant)),
+                  ),
+                if (asInt(post['report_count']) > 0) ...[
+                  const SizedBox(width: 8),
+                  ReportFlagBadge(
+                    reportCount: asInt(post['report_count']),
+                    loadReports: () => widget.client.lessonDiscussionReports(discussionId),
+                    onVote: (reportId, type) => widget.client.discussionReportVote(reportId, type: type),
+                  ),
+                ],
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -339,6 +423,14 @@ class _LessonDiscussionSectionState extends State<LessonDiscussionSection> {
                 child: Text('${_posts.length}',
                     style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.primary)),
               ),
+              const Spacer(),
+              if (widget.canModerate)
+                IconButton(
+                  icon: const Icon(Icons.shield_outlined, size: 20),
+                  onPressed: _openModerationQueue,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
             ],
           ),
           const SizedBox(height: 10),
@@ -522,7 +614,109 @@ class _CommentsSheetState extends State<_CommentsSheet> {
     }
   }
 
-  Widget _authorRow(String name, String photo, String createdAt, {double radius = 14}) {
+  Future<void> _editComment(Map<String, dynamic> comment) async {
+    final commentId = asInt(comment['comment_id']);
+    await showDiscussionEditDialog(
+      context,
+      initialText: '${comment['comment'] ?? ''}',
+      onSubmit: (text) async {
+        final result = await widget.client.lessonDiscussionCommentEdit(commentId, message: text);
+        setState(() {
+          comment['comment'] = result['message'];
+          comment['edited_at'] = result['edited_at'];
+          comment['is_edited'] = true;
+        });
+      },
+    );
+  }
+
+  Future<void> _deleteComment(Map<String, dynamic> comment) async {
+    if (!await confirmDiscussionDelete(context, 'comment')) return;
+    final commentId = asInt(comment['comment_id']);
+    try {
+      await widget.client.lessonDiscussionCommentDelete(commentId);
+      if (!mounted) return;
+      setState(() => widget.comments.removeWhere((c) => c['comment_id'] == comment['comment_id']));
+    } catch (e) {
+      if (!mounted) return;
+      AppSnackbar.error(context, friendlyErrorMessage(e));
+    }
+  }
+
+  Future<void> _reportComment(Map<String, dynamic> comment) async {
+    final commentId = asInt(comment['comment_id']);
+    await showDiscussionReportDialog(
+      context,
+      onSubmit: (description) async {
+        await widget.client.lessonDiscussionCommentReport(commentId, description: description);
+        setState(() {
+          comment['is_reported'] = true;
+          comment['report_count'] = asInt(comment['report_count']) + 1;
+        });
+      },
+    );
+  }
+
+  Future<void> _editReply(Map<String, dynamic> reply) async {
+    final replyId = asInt(reply['reply_id']);
+    await showDiscussionEditDialog(
+      context,
+      initialText: '${reply['reply'] ?? ''}',
+      onSubmit: (text) async {
+        final result = await widget.client.lessonDiscussionReplyEdit(replyId, message: text);
+        setState(() {
+          reply['reply'] = result['message'];
+          reply['edited_at'] = result['edited_at'];
+          reply['is_edited'] = true;
+        });
+      },
+    );
+  }
+
+  bool _removeReplyRecursive(List<Map<String, dynamic>> list, int replyId) {
+    final before = list.length;
+    list.removeWhere((r) => asInt(r['reply_id']) == replyId);
+    if (list.length != before) return true;
+    for (final r in list) {
+      final nested = r['replies'] as List<Map<String, dynamic>>?;
+      if (nested != null && _removeReplyRecursive(nested, replyId)) return true;
+    }
+    return false;
+  }
+
+  Future<void> _deleteReply(Map<String, dynamic> reply) async {
+    if (!await confirmDiscussionDelete(context, 'reply')) return;
+    final replyId = asInt(reply['reply_id']);
+    try {
+      await widget.client.lessonDiscussionReplyDelete(replyId);
+      if (!mounted) return;
+      setState(() {
+        for (final c in widget.comments) {
+          final replies = c['replies'] as List<Map<String, dynamic>>?;
+          if (replies != null && _removeReplyRecursive(replies, replyId)) break;
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      AppSnackbar.error(context, friendlyErrorMessage(e));
+    }
+  }
+
+  Future<void> _reportReply(Map<String, dynamic> reply) async {
+    final replyId = asInt(reply['reply_id']);
+    await showDiscussionReportDialog(
+      context,
+      onSubmit: (description) async {
+        await widget.client.lessonDiscussionReplyReport(replyId, description: description);
+        setState(() {
+          reply['is_reported'] = true;
+          reply['report_count'] = asInt(reply['report_count']) + 1;
+        });
+      },
+    );
+  }
+
+  Widget _authorRow(String name, String photo, String roleName, String createdAt, {double radius = 14, bool isEdited = false}) {
     final scheme = Theme.of(context).colorScheme;
     return Row(
       children: [
@@ -538,7 +732,15 @@ class _CommentsSheetState extends State<_CommentsSheet> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
-              Text(timeAgo(createdAt), style: TextStyle(fontSize: 10, color: scheme.onSurfaceVariant)),
+              Row(
+                children: [
+                  Text(
+                    [if (roleName.isNotEmpty) roleName, timeAgo(createdAt)].join(' · '),
+                    style: TextStyle(fontSize: 10, color: scheme.onSurfaceVariant),
+                  ),
+                  if (isEdited) const EditedBadge(),
+                ],
+              ),
             ],
           ),
         ),
@@ -615,25 +817,67 @@ class _CommentsSheetState extends State<_CommentsSheet> {
     final nested = List<Map<String, dynamic>>.from(r['replies'] as List? ?? []);
     final ctrl = _replyCtrls.putIfAbsent(key, () => TextEditingController());
     final indent = 26.0 + (depth * 20).clamp(0, 60);
+    final isRemoved = r['is_removed'] == true;
     return Padding(
       padding: EdgeInsets.only(top: 10, left: indent),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _authorRow('${r['author_name'] ?? ''}', '${r['author_photo'] ?? ''}', '${r['created_at'] ?? ''}', radius: 11),
-          Padding(
-            padding: const EdgeInsets.only(left: 30, top: 3),
-            child: Text('${r['reply'] ?? ''}', style: const TextStyle(fontSize: 12)),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _authorRow(
+                  '${r['author_name'] ?? ''}',
+                  '${r['author_photo'] ?? ''}',
+                  '${r['author_role_cat_name'] ?? ''}',
+                  '${r['created_at'] ?? ''}',
+                  radius: 11,
+                  isEdited: r['is_edited'] == true,
+                ),
+              ),
+              if (!isRemoved)
+                DiscussionActionMenu(
+                  canEdit: r['can_edit'] == true,
+                  canDelete: r['can_delete'] == true,
+                  onEdit: () => _editReply(r),
+                  onDelete: () => _deleteReply(r),
+                  onReport: r['is_mine'] == true ? null : () => _reportReply(r),
+                ),
+            ],
           ),
-          Padding(
-            padding: const EdgeInsets.only(left: 30, top: 3),
-            child: _reactionRow(
-              r,
-              _reactToReply,
-              onReply: () => setState(() => _replyingToKey = _replyingToKey == key ? null : key),
-              fetchReactions: () => widget.client.getLessonDiscussionReplyReactions(replyId),
+          if (isRemoved)
+            Padding(
+              padding: const EdgeInsets.only(left: 30, top: 3),
+              child: DeletedContentTile(label: 'Deleted reply', removal: r['removal'] as Map<String, dynamic>?),
+            )
+          else ...[
+            Padding(
+              padding: const EdgeInsets.only(left: 30, top: 3),
+              child: ExpandableText('${r['reply'] ?? ''}', style: const TextStyle(fontSize: 12)),
             ),
-          ),
+            Padding(
+              padding: const EdgeInsets.only(left: 30, top: 3),
+              child: Row(
+                children: [
+                  _reactionRow(
+                    r,
+                    _reactToReply,
+                    onReply: () => setState(() => _replyingToKey = _replyingToKey == key ? null : key),
+                    fetchReactions: () => widget.client.getLessonDiscussionReplyReactions(replyId),
+                  ),
+                  if (asInt(r['report_count']) > 0) ...[
+                    const SizedBox(width: 10),
+                    ReportFlagBadge(
+                      reportCount: asInt(r['report_count']),
+                      loadReports: () => widget.client.lessonDiscussionReplyReports(replyId),
+                      onVote: (reportId, type) => widget.client.discussionReportVote(reportId, type: type),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
           if (_replyingToKey == key)
             Padding(
               padding: const EdgeInsets.only(left: 30, top: 8),
@@ -666,25 +910,66 @@ class _CommentsSheetState extends State<_CommentsSheet> {
     final key = 'c$commentId';
     final replies = List<Map<String, dynamic>>.from(c['replies'] as List? ?? []);
     final ctrl = _replyCtrls.putIfAbsent(key, () => TextEditingController());
+    final isRemoved = c['is_removed'] == true;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _authorRow('${c['author_name'] ?? ''}', '${c['author_photo'] ?? ''}', '${c['created_at'] ?? ''}'),
-          Padding(
-            padding: const EdgeInsets.only(left: 32, top: 4),
-            child: Text('${c['comment'] ?? ''}', style: const TextStyle(fontSize: 13)),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _authorRow(
+                  '${c['author_name'] ?? ''}',
+                  '${c['author_photo'] ?? ''}',
+                  '${c['author_role_cat_name'] ?? ''}',
+                  '${c['created_at'] ?? ''}',
+                  isEdited: c['is_edited'] == true,
+                ),
+              ),
+              if (!isRemoved)
+                DiscussionActionMenu(
+                  canEdit: c['can_edit'] == true,
+                  canDelete: c['can_delete'] == true,
+                  onEdit: () => _editComment(c),
+                  onDelete: () => _deleteComment(c),
+                  onReport: c['is_mine'] == true ? null : () => _reportComment(c),
+                ),
+            ],
           ),
-          Padding(
-            padding: const EdgeInsets.only(left: 32, top: 4),
-            child: _reactionRow(
-              c,
-              _reactToComment,
-              onReply: () => setState(() => _replyingToKey = _replyingToKey == key ? null : key),
-              fetchReactions: () => widget.client.getLessonDiscussionCommentReactions(commentId),
+          if (isRemoved)
+            Padding(
+              padding: const EdgeInsets.only(left: 32, top: 4),
+              child: DeletedContentTile(label: 'Deleted comment', removal: c['removal'] as Map<String, dynamic>?),
+            )
+          else ...[
+            Padding(
+              padding: const EdgeInsets.only(left: 32, top: 4),
+              child: ExpandableText('${c['comment'] ?? ''}', style: const TextStyle(fontSize: 13)),
             ),
-          ),
+            Padding(
+              padding: const EdgeInsets.only(left: 32, top: 4),
+              child: Row(
+                children: [
+                  _reactionRow(
+                    c,
+                    _reactToComment,
+                    onReply: () => setState(() => _replyingToKey = _replyingToKey == key ? null : key),
+                    fetchReactions: () => widget.client.getLessonDiscussionCommentReactions(commentId),
+                  ),
+                  if (asInt(c['report_count']) > 0) ...[
+                    const SizedBox(width: 10),
+                    ReportFlagBadge(
+                      reportCount: asInt(c['report_count']),
+                      loadReports: () => widget.client.lessonDiscussionCommentReports(commentId),
+                      onVote: (reportId, type) => widget.client.discussionReportVote(reportId, type: type),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
           for (final r in replies) _replyTile(r),
           if (_replyingToKey == key)
             Padding(

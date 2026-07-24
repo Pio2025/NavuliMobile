@@ -1028,4 +1028,383 @@ class ApiClient {
     }
     return Map<String, dynamic>.from(body['reply']);
   }
+
+  // ---------------- Class discussion: edit / delete / report ----------------
+
+  Future<Map<String, dynamic>> classDiscussionEdit(int postId, {required String message}) async {
+    final res = await http
+        .put(
+          Uri.parse(ApiConfig.classDiscussionEditUrl(postId)),
+          headers: {...auth.authHeaders, 'Content-Type': 'application/json'},
+          body: jsonEncode({'message': message}),
+        )
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to edit post.');
+    }
+    return body;
+  }
+
+  Future<void> classDiscussionDelete(int postId) async {
+    final res = await http
+        .delete(Uri.parse(ApiConfig.classDiscussionDeleteUrl(postId)), headers: auth.authHeaders)
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to delete post.');
+    }
+  }
+
+  Future<Map<String, dynamic>> classDiscussionReport(int postId, {required String description}) async {
+    final res = await http
+        .post(
+          Uri.parse(ApiConfig.classDiscussionReportUrl(postId)),
+          headers: {...auth.authHeaders, 'Content-Type': 'application/json'},
+          body: jsonEncode({'description': description}),
+        )
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to submit report.');
+    }
+    return Map<String, dynamic>.from(body['report']);
+  }
+
+  Future<List<Map<String, dynamic>>> classDiscussionReports(int postId) async {
+    final res = await http
+        .get(Uri.parse(ApiConfig.classDiscussionReportsUrl(postId)), headers: auth.authHeaders)
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to load reports.');
+    }
+    return List<Map<String, dynamic>>.from(body['reports'] ?? []);
+  }
+
+  Future<Map<String, dynamic>> classDiscussionCommentEdit(int commentId, {required String message}) async {
+    final res = await http
+        .put(
+          Uri.parse(ApiConfig.classDiscussionCommentEditUrl(commentId)),
+          headers: {...auth.authHeaders, 'Content-Type': 'application/json'},
+          body: jsonEncode({'message': message}),
+        )
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to edit comment.');
+    }
+    return body;
+  }
+
+  Future<void> classDiscussionCommentDelete(int commentId) async {
+    final res = await http
+        .delete(Uri.parse(ApiConfig.classDiscussionCommentDeleteUrl(commentId)), headers: auth.authHeaders)
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to delete comment.');
+    }
+  }
+
+  Future<Map<String, dynamic>> classDiscussionCommentReport(int commentId, {required String description}) async {
+    final res = await http
+        .post(
+          Uri.parse(ApiConfig.classDiscussionCommentReportUrl(commentId)),
+          headers: {...auth.authHeaders, 'Content-Type': 'application/json'},
+          body: jsonEncode({'description': description}),
+        )
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to submit report.');
+    }
+    return Map<String, dynamic>.from(body['report']);
+  }
+
+  Future<List<Map<String, dynamic>>> classDiscussionCommentReports(int commentId) async {
+    final res = await http
+        .get(Uri.parse(ApiConfig.classDiscussionCommentReportsUrl(commentId)), headers: auth.authHeaders)
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to load reports.');
+    }
+    return List<Map<String, dynamic>>.from(body['reports'] ?? []);
+  }
+
+  Future<Map<String, dynamic>> classDiscussionReplyEdit(int replyId, {required String message}) async {
+    final res = await http
+        .put(
+          Uri.parse(ApiConfig.classDiscussionReplyEditUrl(replyId)),
+          headers: {...auth.authHeaders, 'Content-Type': 'application/json'},
+          body: jsonEncode({'message': message}),
+        )
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to edit reply.');
+    }
+    return body;
+  }
+
+  Future<void> classDiscussionReplyDelete(int replyId) async {
+    final res = await http
+        .delete(Uri.parse(ApiConfig.classDiscussionReplyDeleteUrl(replyId)), headers: auth.authHeaders)
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to delete reply.');
+    }
+  }
+
+  Future<Map<String, dynamic>> classDiscussionReplyReport(int replyId, {required String description}) async {
+    final res = await http
+        .post(
+          Uri.parse(ApiConfig.classDiscussionReplyReportUrl(replyId)),
+          headers: {...auth.authHeaders, 'Content-Type': 'application/json'},
+          body: jsonEncode({'description': description}),
+        )
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to submit report.');
+    }
+    return Map<String, dynamic>.from(body['report']);
+  }
+
+  Future<List<Map<String, dynamic>>> classDiscussionReplyReports(int replyId) async {
+    final res = await http
+        .get(Uri.parse(ApiConfig.classDiscussionReplyReportsUrl(replyId)), headers: auth.authHeaders)
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to load reports.');
+    }
+    return List<Map<String, dynamic>>.from(body['reports'] ?? []);
+  }
+
+  // ---------------- Lesson discussion: edit / delete / report ----------------
+
+  Future<Map<String, dynamic>> lessonDiscussionEdit(int discussionId, {required String message}) async {
+    final res = await http
+        .put(
+          Uri.parse(ApiConfig.lessonDiscussionEditUrl(discussionId)),
+          headers: {...auth.authHeaders, 'Content-Type': 'application/json'},
+          body: jsonEncode({'message': message}),
+        )
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to edit post.');
+    }
+    return body;
+  }
+
+  Future<void> lessonDiscussionDelete(int discussionId) async {
+    final res = await http
+        .delete(Uri.parse(ApiConfig.lessonDiscussionDeleteUrl(discussionId)), headers: auth.authHeaders)
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to delete post.');
+    }
+  }
+
+  Future<Map<String, dynamic>> lessonDiscussionReport(int discussionId, {required String description}) async {
+    final res = await http
+        .post(
+          Uri.parse(ApiConfig.lessonDiscussionReportUrl(discussionId)),
+          headers: {...auth.authHeaders, 'Content-Type': 'application/json'},
+          body: jsonEncode({'description': description}),
+        )
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to submit report.');
+    }
+    return Map<String, dynamic>.from(body['report']);
+  }
+
+  Future<List<Map<String, dynamic>>> lessonDiscussionReports(int discussionId) async {
+    final res = await http
+        .get(Uri.parse(ApiConfig.lessonDiscussionReportsUrl(discussionId)), headers: auth.authHeaders)
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to load reports.');
+    }
+    return List<Map<String, dynamic>>.from(body['reports'] ?? []);
+  }
+
+  Future<Map<String, dynamic>> lessonDiscussionCommentEdit(int commentId, {required String message}) async {
+    final res = await http
+        .put(
+          Uri.parse(ApiConfig.lessonDiscussionCommentEditUrl(commentId)),
+          headers: {...auth.authHeaders, 'Content-Type': 'application/json'},
+          body: jsonEncode({'message': message}),
+        )
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to edit comment.');
+    }
+    return body;
+  }
+
+  Future<void> lessonDiscussionCommentDelete(int commentId) async {
+    final res = await http
+        .delete(Uri.parse(ApiConfig.lessonDiscussionCommentDeleteUrl(commentId)), headers: auth.authHeaders)
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to delete comment.');
+    }
+  }
+
+  Future<Map<String, dynamic>> lessonDiscussionCommentReport(int commentId, {required String description}) async {
+    final res = await http
+        .post(
+          Uri.parse(ApiConfig.lessonDiscussionCommentReportUrl(commentId)),
+          headers: {...auth.authHeaders, 'Content-Type': 'application/json'},
+          body: jsonEncode({'description': description}),
+        )
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to submit report.');
+    }
+    return Map<String, dynamic>.from(body['report']);
+  }
+
+  Future<List<Map<String, dynamic>>> lessonDiscussionCommentReports(int commentId) async {
+    final res = await http
+        .get(Uri.parse(ApiConfig.lessonDiscussionCommentReportsUrl(commentId)), headers: auth.authHeaders)
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to load reports.');
+    }
+    return List<Map<String, dynamic>>.from(body['reports'] ?? []);
+  }
+
+  Future<Map<String, dynamic>> lessonDiscussionReplyEdit(int replyId, {required String message}) async {
+    final res = await http
+        .put(
+          Uri.parse(ApiConfig.lessonDiscussionReplyEditUrl(replyId)),
+          headers: {...auth.authHeaders, 'Content-Type': 'application/json'},
+          body: jsonEncode({'message': message}),
+        )
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to edit reply.');
+    }
+    return body;
+  }
+
+  Future<void> lessonDiscussionReplyDelete(int replyId) async {
+    final res = await http
+        .delete(Uri.parse(ApiConfig.lessonDiscussionReplyDeleteUrl(replyId)), headers: auth.authHeaders)
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to delete reply.');
+    }
+  }
+
+  Future<Map<String, dynamic>> lessonDiscussionReplyReport(int replyId, {required String description}) async {
+    final res = await http
+        .post(
+          Uri.parse(ApiConfig.lessonDiscussionReplyReportUrl(replyId)),
+          headers: {...auth.authHeaders, 'Content-Type': 'application/json'},
+          body: jsonEncode({'description': description}),
+        )
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to submit report.');
+    }
+    return Map<String, dynamic>.from(body['report']);
+  }
+
+  Future<List<Map<String, dynamic>>> lessonDiscussionReplyReports(int replyId) async {
+    final res = await http
+        .get(Uri.parse(ApiConfig.lessonDiscussionReplyReportsUrl(replyId)), headers: auth.authHeaders)
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to load reports.');
+    }
+    return List<Map<String, dynamic>>.from(body['reports'] ?? []);
+  }
+
+  // ---------------- Shared moderation: queue / vote / decision / history / suspend ----------------
+
+  Future<List<Map<String, dynamic>>> discussionModerationQueue(int classId) async {
+    final res = await http
+        .get(Uri.parse(ApiConfig.discussionModerationQueueUrl(classId)), headers: auth.authHeaders)
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to load moderation queue.');
+    }
+    return List<Map<String, dynamic>>.from(body['reports'] ?? []);
+  }
+
+  Future<Map<String, dynamic>> discussionReportVote(int reportId, {required String type}) async {
+    final res = await http
+        .post(
+          Uri.parse(ApiConfig.discussionReportVoteUrl(reportId)),
+          headers: {...auth.authHeaders, 'Content-Type': 'application/json'},
+          body: jsonEncode({'type': type}),
+        )
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to vote on report.');
+    }
+    return body;
+  }
+
+  Future<Map<String, dynamic>> discussionReportDecision(int reportId, {required String decision}) async {
+    final res = await http
+        .post(
+          Uri.parse(ApiConfig.discussionReportDecisionUrl(reportId)),
+          headers: {...auth.authHeaders, 'Content-Type': 'application/json'},
+          body: jsonEncode({'decision': decision}),
+        )
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to record decision.');
+    }
+    return body;
+  }
+
+  Future<Map<String, dynamic>> discussionUserReportHistory(int userId) async {
+    final res = await http
+        .get(Uri.parse(ApiConfig.discussionUserReportHistoryUrl(userId)), headers: auth.authHeaders)
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to load report history.');
+    }
+    return body;
+  }
+
+  Future<Map<String, dynamic>> discussionUserSuspend(int userId, {required bool suspended}) async {
+    final res = await http
+        .post(
+          Uri.parse(ApiConfig.discussionUserSuspendUrl(userId)),
+          headers: {...auth.authHeaders, 'Content-Type': 'application/json'},
+          body: jsonEncode({'suspended': suspended}),
+        )
+        .timeout(const Duration(seconds: 20));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to update posting status.');
+    }
+    return body;
+  }
 }

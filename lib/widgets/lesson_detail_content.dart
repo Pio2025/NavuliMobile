@@ -96,6 +96,8 @@ class _LessonDetailContentState extends State<LessonDetailContent> {
   List<Map<String, dynamic>> _links = [];
   List<Map<String, dynamic>> _assessments = [];
   List<Map<String, dynamic>> _discussion = [];
+  int _discussionClassId = 0;
+  bool _canModerateDiscussion = false;
 
   @override
   void initState() {
@@ -118,6 +120,8 @@ class _LessonDetailContentState extends State<LessonDetailContent> {
         _links = List<Map<String, dynamic>>.from(body['links'] ?? []);
         _assessments = List<Map<String, dynamic>>.from(body['assessments'] ?? []);
         _discussion = List<Map<String, dynamic>>.from(body['discussion'] ?? []);
+        _discussionClassId = body['classId'] is num ? (body['classId'] as num).toInt() : 0;
+        _canModerateDiscussion = body['canModerate'] == true;
         _loading = false;
       });
     } catch (e) {
@@ -425,6 +429,8 @@ class _LessonDetailContentState extends State<LessonDetailContent> {
         LessonDiscussionSection(
           client: _client,
           lessonId: widget.lessonId,
+          classId: _discussionClassId,
+          canModerate: _canModerateDiscussion,
           initialDiscussions: _discussion,
         ),
       ],

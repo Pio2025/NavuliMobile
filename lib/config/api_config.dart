@@ -50,6 +50,23 @@ class ApiConfig {
   static String classDiscussionReplyLikeUrl(int replyId) => '$baseUrl/api/classroom/discussion/reply/$replyId/like';
   static String classDiscussionReplyReactionsUrl(int replyId) => '$baseUrl/api/classroom/discussion/reply/$replyId/reactions';
   static String classDiscussionReplyReplyUrl(int replyId) => '$baseUrl/api/classroom/discussion/reply/$replyId/reply';
+  static String classDiscussionEditUrl(int postId) => '$baseUrl/api/classroom/discussion/$postId/edit';
+  static String classDiscussionDeleteUrl(int postId) => '$baseUrl/api/classroom/discussion/$postId';
+  static String classDiscussionReportUrl(int postId) => '$baseUrl/api/classroom/discussion/$postId/report';
+  static String classDiscussionReportsUrl(int postId) => '$baseUrl/api/classroom/discussion/$postId/reports';
+  static String classDiscussionCommentEditUrl(int commentId) => '$baseUrl/api/classroom/discussion/comment/$commentId/edit';
+  static String classDiscussionCommentDeleteUrl(int commentId) => '$baseUrl/api/classroom/discussion/comment/$commentId';
+  static String classDiscussionCommentReportUrl(int commentId) => '$baseUrl/api/classroom/discussion/comment/$commentId/report';
+  static String classDiscussionCommentReportsUrl(int commentId) => '$baseUrl/api/classroom/discussion/comment/$commentId/reports';
+  static String classDiscussionReplyEditUrl(int replyId) => '$baseUrl/api/classroom/discussion/reply/$replyId/edit';
+  static String classDiscussionReplyDeleteUrl(int replyId) => '$baseUrl/api/classroom/discussion/reply/$replyId';
+  static String classDiscussionReplyReportUrl(int replyId) => '$baseUrl/api/classroom/discussion/reply/$replyId/report';
+  static String classDiscussionReplyReportsUrl(int replyId) => '$baseUrl/api/classroom/discussion/reply/$replyId/reports';
+  static String discussionModerationQueueUrl(int classId) => '$baseUrl/api/classroom/$classId/discussion/reports';
+  static String discussionReportVoteUrl(int reportId) => '$baseUrl/api/classroom/discussion/report/$reportId/vote';
+  static String discussionReportDecisionUrl(int reportId) => '$baseUrl/api/classroom/discussion/report/$reportId/decision';
+  static String discussionUserReportHistoryUrl(int userId) => '$baseUrl/api/classroom/discussion/user/$userId/report-history';
+  static String discussionUserSuspendUrl(int userId) => '$baseUrl/api/classroom/discussion/user/$userId/suspend';
   static String subjectDashboardUrl(int classSubId) => '$baseUrl/api/classroom/subject/$classSubId/dashboard';
   static String subjectLessonsUrl(int classSubId) => '$baseUrl/api/classroom/subject/$classSubId/lessons';
   static String subjectLessonsCalendarUrl(int classSubId, {int? term}) =>
@@ -75,6 +92,18 @@ class ApiConfig {
   static String lessonDiscussionReplyLikeUrl(int replyId) => '$baseUrl/api/classroom/lesson/discussion/reply/$replyId/like';
   static String lessonDiscussionReplyReactionsUrl(int replyId) => '$baseUrl/api/classroom/lesson/discussion/reply/$replyId/reactions';
   static String lessonDiscussionReplyReplyUrl(int replyId) => '$baseUrl/api/classroom/lesson/discussion/reply/$replyId/reply';
+  static String lessonDiscussionEditUrl(int discussionId) => '$baseUrl/api/classroom/lesson/discussion/$discussionId/edit';
+  static String lessonDiscussionDeleteUrl(int discussionId) => '$baseUrl/api/classroom/lesson/discussion/$discussionId';
+  static String lessonDiscussionReportUrl(int discussionId) => '$baseUrl/api/classroom/lesson/discussion/$discussionId/report';
+  static String lessonDiscussionReportsUrl(int discussionId) => '$baseUrl/api/classroom/lesson/discussion/$discussionId/reports';
+  static String lessonDiscussionCommentEditUrl(int commentId) => '$baseUrl/api/classroom/lesson/discussion/comment/$commentId/edit';
+  static String lessonDiscussionCommentDeleteUrl(int commentId) => '$baseUrl/api/classroom/lesson/discussion/comment/$commentId';
+  static String lessonDiscussionCommentReportUrl(int commentId) => '$baseUrl/api/classroom/lesson/discussion/comment/$commentId/report';
+  static String lessonDiscussionCommentReportsUrl(int commentId) => '$baseUrl/api/classroom/lesson/discussion/comment/$commentId/reports';
+  static String lessonDiscussionReplyEditUrl(int replyId) => '$baseUrl/api/classroom/lesson/discussion/reply/$replyId/edit';
+  static String lessonDiscussionReplyDeleteUrl(int replyId) => '$baseUrl/api/classroom/lesson/discussion/reply/$replyId';
+  static String lessonDiscussionReplyReportUrl(int replyId) => '$baseUrl/api/classroom/lesson/discussion/reply/$replyId/report';
+  static String lessonDiscussionReplyReportsUrl(int replyId) => '$baseUrl/api/classroom/lesson/discussion/reply/$replyId/reports';
 
   static String lessonFileUrl(String path) {
     if (path.isEmpty) return '';

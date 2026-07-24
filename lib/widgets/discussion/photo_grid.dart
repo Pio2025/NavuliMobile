@@ -23,6 +23,23 @@ class DiscussionPhotoGrid extends StatelessWidget {
           Image.network(
             photoUrls[index],
             fit: fit,
+            loadingBuilder: (context, child, progress) {
+              if (progress == null) return child;
+              return Container(
+                color: scheme.surfaceContainerHighest,
+                alignment: Alignment.center,
+                child: SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    value: progress.expectedTotalBytes != null
+                        ? progress.cumulativeBytesLoaded / progress.expectedTotalBytes!
+                        : null,
+                  ),
+                ),
+              );
+            },
             errorBuilder: (context, error, stack) => Container(
               color: scheme.surfaceContainerHighest,
               child: const Icon(Icons.broken_image_outlined),
